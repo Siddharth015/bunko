@@ -12,9 +12,10 @@ const supabase = createClient(
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { username: string } }
+    props: { params: Promise<{ username: string }> }
 ) {
     try {
+        const params = await props.params;
         const { username } = params;
 
         // Fetch user profile and top 4 media

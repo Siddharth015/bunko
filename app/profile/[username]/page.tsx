@@ -7,11 +7,12 @@ const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function generateMetadata({
-    params,
-}: {
-    params: { username: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+    props: {
+        params: Promise<{ username: string }>;
+    }
+): Promise<Metadata> {
+    const params = await props.params;
     const { username } = params;
 
     // Fetch user profile for metadata
@@ -42,11 +43,12 @@ export async function generateMetadata({
     };
 }
 
-export default async function ProfilePage({
-    params,
-}: {
-    params: { username: string };
-}) {
+export default async function ProfilePage(
+    props: {
+        params: Promise<{ username: string }>;
+    }
+) {
+    const params = await props.params;
     const { username } = params;
 
     const { data: profile } = await supabase
