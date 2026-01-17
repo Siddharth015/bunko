@@ -42,7 +42,19 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                 onClose();
             }
         } catch (err: any) {
-            setError(err.message || 'An error occurred');
+            console.error('Sign up/in error:', err);
+            // Don't expose server errors to the user
+            if (tab === 'signup' && err.message?.includes('violates row-level security')) {
+                // This specific error might still happen if the trigger fails or something is wrong on the backend
+                // but we shouldn't show "row-level security" to the user
+                setError('Unable to create account. Please try again later.');
+            } else if (err.message) {
+                // For now, we still show the message if it's likely safe (e.g. "User already registered")
+                // But ideally we map codes to messages. For general safety:
+                setError(err.message === 'User already registered' ? err.message : 'Authentication failed. Please check your credentials.');
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -83,8 +95,8 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     <button
                         onClick={() => setTab('signin')}
                         className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${tab === 'signin'
-                                ? 'bg-purple-600 text-white'
-                                : 'text-gray-400 hover:text-white'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-400 hover:text-white'
                             }`}
                     >
                         Sign In
@@ -92,8 +104,8 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     <button
                         onClick={() => setTab('signup')}
                         className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${tab === 'signup'
-                                ? 'bg-purple-600 text-white'
-                                : 'text-gray-400 hover:text-white'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-400 hover:text-white'
                             }`}
                     >
                         Sign Up
