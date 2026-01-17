@@ -30,8 +30,8 @@ export default function Navigation() {
     return (
         <>
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                    ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]'
-                    : 'bg-transparent'
+                ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]'
+                : 'bg-transparent'
                 }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-20">
@@ -57,8 +57,8 @@ export default function Navigation() {
                                         key={item.href}
                                         href={item.href}
                                         className={`relative px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 ${isActive
-                                                ? 'text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                            ? 'text-white'
+                                            : 'text-gray-400 hover:text-white'
                                             }`}
                                     >
                                         {isActive && (
@@ -84,9 +84,9 @@ export default function Navigation() {
                                         className="flex items-center gap-3 bg-white/5 hover:bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl transition-all duration-300 border border-white/10 hover:border-purple-500/50"
                                     >
                                         <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
-                                            {user.email?.[0].toUpperCase()}
+                                            {(user.user_metadata?.username || user.email)?.[0].toUpperCase()}
                                         </div>
-                                        <span className="text-white font-medium hidden lg:block">{user.email?.split('@')[0]}</span>
+                                        <span className="text-white font-medium hidden lg:block">{user.user_metadata?.username || user.email?.split('@')[0]}</span>
                                         <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
@@ -97,10 +97,10 @@ export default function Navigation() {
                                         <div className="absolute right-0 mt-2 w-56 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl py-2 overflow-hidden">
                                             <div className="px-4 py-3 border-b border-white/10">
                                                 <p className="text-sm text-gray-400">Signed in as</p>
-                                                <p className="text-white font-semibold truncate">{user.email}</p>
+                                                <p className="text-white font-semibold truncate">{user.user_metadata?.username || user.email}</p>
                                             </div>
                                             <Link
-                                                href={`/profile/${user.email?.split('@')[0]}`}
+                                                href={`/profile/${user.user_metadata?.username || user.email?.split('@')[0]}`}
                                                 className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
                                                 onClick={() => setShowUserMenu(false)}
                                             >

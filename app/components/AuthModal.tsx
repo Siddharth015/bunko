@@ -32,11 +32,25 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                 if (error) throw error;
                 onClose();
             } else {
+                // Validate username
                 if (!username) {
                     setError('Username is required');
                     setLoading(false);
                     return;
                 }
+
+                if (/\s/.test(username)) {
+                    setError('Username cannot contain spaces');
+                    setLoading(false);
+                    return;
+                }
+
+                if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                    setError('Username can only contain letters, numbers, and underscores');
+                    setLoading(false);
+                    return;
+                }
+
                 const { error } = await signUp(email, password, username);
                 if (error) throw error;
                 onClose();

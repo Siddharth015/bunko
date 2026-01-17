@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useDeferredValue } from 'react';
+import { useAuth, supabase } from '../components/AuthProvider';
+import AuthModal from '../components/AuthModal';
 
 interface MediaResult {
     id: string;
@@ -10,7 +12,7 @@ interface MediaResult {
     year: number | null;
 }
 
-function MediaCard({ media }: { media: MediaResult }) {
+function MediaCard({ media, onAdd, isAdding }: { media: MediaResult; onAdd: () => void; isAdding: boolean }) {
     const badgeColors = {
         movie: 'from-blue-500 to-cyan-500',
         anime: 'from-pink-500 to-rose-500',
@@ -40,6 +42,27 @@ function MediaCard({ media }: { media: MediaResult }) {
                     {/* Badge */}
                     <div className={`absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r ${badgeColors[media.type]} text-white text-xs font-bold uppercase shadow-lg`}>
                         {media.type}
+                    </div>
+
+                    {/* Add Button Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAdd();
+                            }}
+                            disabled={isAdding}
+                            className="bg-white text-black font-bold py-3 px-6 rounded-full transform scale-90 hover:scale-100 transition-transform flex items-center gap-2 hover:bg-gray-200"
+                        >
+                            {isAdding ? (
+                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            )}
+                            {isAdding ? 'Adding...' : 'Add to Library'}
+                        </button>
                     </div>
                 </div>
 
@@ -109,8 +132,56 @@ export default function SearchClient() {
         performSearch();
     }, [deferredSearch]);
 
+    const { user } = useAuth();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+
+    const handleAddToLibrary = async (media: MediaResult) => {
+        if (!user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        setAddingIds(prev => new Set(prev).add(media.id));
+
+        try {
+            const res = await fetch('/api/library', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                },
+                body: JSON.stringify({
+                    mediaId: media.id,
+                    mediaType: media.type,
+                    title: media.title,
+                    year: media.year,
+                    imageUrl: media.imageUrl
+                })
+            });
+
+            if (!res.ok) throw new Error('Failed to add');
+
+            // Show toast or success state? For now just stop loading
+            // Ideally we'd have a toast library. 
+            // We'll simulate a brief "Checked" state by keeping it in 'addingIds' or moving to a 'addedIds' set.
+            // But for this step, just resetting loading state.
+        } catch (err) {
+            console.error(err);
+            alert('Failed to add to library');
+        } finally {
+            setAddingIds(prev => {
+                const next = new Set(prev);
+                next.delete(media.id);
+                return next;
+            });
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black relative overflow-hidden pt-20">
+            <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
             {/* Background */}
             <div className="fixed inset-0 opacity-40 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-black to-pink-900"></div>
@@ -175,7 +246,12 @@ export default function SearchClient() {
                 {!loading && results.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         {results.map((media) => (
-                            <MediaCard key={media.id} media={media} />
+                            <MediaCard
+                                key={media.id}
+                                media={media}
+                                onAdd={() => handleAddToLibrary(media)}
+                                isAdding={addingIds.has(media.id)}
+                            />
                         ))}
                     </div>
                 )}
