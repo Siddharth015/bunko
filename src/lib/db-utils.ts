@@ -11,7 +11,7 @@ import {
     DatabaseResponse,
     DatabaseListResponse,
     UserStats,
-} from '@/types/database.types';
+} from '@/src/types/database.types';
 
 // ============================================================
 // ERROR HANDLING UTILITIES
@@ -28,7 +28,7 @@ function handleError(error: any, operation: string): void {
  * Wrapper for single-item database operations with error handling
  */
 async function executeSingleQuery<T>(
-    query: Promise<{ data: T | null; error: any }>,
+    query: PromiseLike<{ data: T | null; error: any }>,
     operation: string
 ): Promise<DatabaseResponse<T>> {
     try {
@@ -50,7 +50,7 @@ async function executeSingleQuery<T>(
  * Wrapper for list database operations with error handling
  */
 async function executeListQuery<T>(
-    query: Promise<{ data: T[] | null; error: any; count?: number | null }>,
+    query: PromiseLike<{ data: T[] | null; error: any; count?: number | null }>,
     operation: string
 ): Promise<DatabaseListResponse<T>> {
     try {
@@ -113,7 +113,7 @@ export async function createProfile(
     return executeSingleQuery(
         supabase
             .from('profiles')
-            .insert(profile)
+            .insert(profile as any)
             .select()
             .single(),
         'createProfile'
@@ -130,7 +130,8 @@ export async function updateProfile(
     return executeSingleQuery(
         supabase
             .from('profiles')
-            .update(updates)
+            // @ts-ignore
+            .update(updates as any)
             .eq('id', userId)
             .select()
             .single(),
@@ -254,7 +255,7 @@ export async function createMediaEntry(
     return executeSingleQuery(
         supabase
             .from('media_entries')
-            .insert(entry)
+            .insert(entry as any)
             .select()
             .single(),
         'createMediaEntry'
@@ -271,7 +272,8 @@ export async function updateMediaEntry(
     return executeSingleQuery(
         supabase
             .from('media_entries')
-            .update(updates)
+            // @ts-ignore
+            .update(updates as any)
             .eq('id', entryId)
             .select()
             .single(),
@@ -305,7 +307,7 @@ export async function getUserStats(
     userId: string
 ): Promise<DatabaseResponse<UserStats>> {
     return executeSingleQuery(
-        supabase.rpc('get_user_stats', { p_user_id: userId }),
+        supabase.rpc('get_user_stats', { p_user_id: userId } as any),
         'getUserStats'
     );
 }
