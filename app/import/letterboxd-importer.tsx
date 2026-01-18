@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Papa from 'papaparse';
+import { useAuth, supabase } from '../components/AuthProvider';
 
 interface LetterboxdRow {
     Name: string;
     Year?: string;
+    Rating?: string; // "3.5"
     [key: string]: any;
 }
 
@@ -17,6 +19,8 @@ interface MatchResult {
     matchedTitle?: string;
     matchedYear?: number | null;
     posterPath?: string | null;
+    saved?: boolean;
+    error?: string;
 }
 
 export default function LetterboxdImporter() {
@@ -25,6 +29,8 @@ export default function LetterboxdImporter() {
     const [progress, setProgress] = useState(0);
     const [results, setResults] = useState<MatchResult[]>([]);
     const [summary, setSummary] = useState<{ imported: number; failed: number } | null>(null);
+
+    const { user } = useAuth();
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFile = e.target.files?.[0];
@@ -55,6 +61,46 @@ export default function LetterboxdImporter() {
         e.preventDefault();
     };
 
+    const saveToLibrary = async (movie: any, ratingStr?: string) => {
+        try {
+            const session = (await supabase.auth.getSession()).data.session;
+            if (!session) throw new Error('No session');
+
+            // Map Rating: Letterboxd 5 stars -> 10 scale
+            let rating: number | undefined;
+            if (ratingStr) {
+                const r = parseFloat(ratingStr);
+                if (!isNaN(r)) rating = Math.min(10, Math.round(r * 2));
+            }
+
+            const res = await fetch('/api/library', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    mediaId: `tmdb-${movie.tmdbId}`,
+                    mediaType: 'movie',
+                    title: movie.title,
+                    year: movie.year,
+                    imageUrl: movie.posterPath,
+                    status: 'COMPLETED',
+                    rating: rating
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to save');
+            }
+            return true;
+        } catch (e) {
+            console.error('Save error', e);
+            throw e;
+        }
+    };
+
     const processImport = async () => {
         if (!file) return;
 
@@ -79,12 +125,11 @@ export default function LetterboxdImporter() {
                         const year = row.Year;
 
                         if (!title) {
-                            failCount++;
                             continue;
                         }
 
                         try {
-                            // Call TMDb lookup API
+                            // 1. Lookup
                             const response = await fetch('/api/migrate/letterboxd', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -94,16 +139,31 @@ export default function LetterboxdImporter() {
                             const data = await response.json();
 
                             if (data.found) {
-                                matchResults.push({
-                                    originalTitle: title,
-                                    originalYear: year || null,
-                                    matched: true,
-                                    tmdbId: data.movie.tmdbId,
-                                    matchedTitle: data.movie.title,
-                                    matchedYear: data.movie.year,
-                                    posterPath: data.movie.posterPath,
-                                });
-                                successCount++;
+                                // 2. Save
+                                try {
+                                    await saveToLibrary(data.movie, row.Rating);
+
+                                    matchResults.push({
+                                        originalTitle: title,
+                                        originalYear: year || null,
+                                        matched: true,
+                                        tmdbId: data.movie.tmdbId,
+                                        matchedTitle: data.movie.title,
+                                        matchedYear: data.movie.year,
+                                        posterPath: data.movie.posterPath,
+                                        saved: true
+                                    });
+                                    successCount++;
+                                } catch (saveErr) {
+                                    matchResults.push({
+                                        originalTitle: title,
+                                        originalYear: year || null,
+                                        matched: true,
+                                        saved: false,
+                                        error: 'Failed to save to library'
+                                    });
+                                    failCount++;
+                                }
                             } else {
                                 matchResults.push({
                                     originalTitle: title,
@@ -116,7 +176,7 @@ export default function LetterboxdImporter() {
                             // Update progress
                             setProgress(Math.round(((i + 1) / rows.length) * 100));
 
-                            // Rate limiting: wait 250ms between requests
+                            // Rate limiting
                             await new Promise((resolve) => setTimeout(resolve, 250));
                         } catch (error) {
                             console.error('Error processing row:', error);
@@ -124,6 +184,7 @@ export default function LetterboxdImporter() {
                                 originalTitle: title,
                                 originalYear: year || null,
                                 matched: false,
+                                error: 'Processing Error'
                             });
                             failCount++;
                         }
@@ -234,9 +295,10 @@ export default function LetterboxdImporter() {
                         {!importing && !summary && (
                             <button
                                 onClick={processImport}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
+                                disabled={!user}
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Start Import
+                                {user ? 'Start Import' : 'Please Sign In to Import'}
                             </button>
                         )}
 
@@ -248,11 +310,11 @@ export default function LetterboxdImporter() {
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-green-500/20 border border-green-500 rounded-lg p-4">
-                                        <p className="text-green-300 text-sm mb-1">Successfully Matched</p>
+                                        <p className="text-green-300 text-sm mb-1">Successfully Saved</p>
                                         <p className="text-white text-3xl font-bold">{summary.imported}</p>
                                     </div>
                                     <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
-                                        <p className="text-red-300 text-sm mb-1">Not Found</p>
+                                        <p className="text-red-300 text-sm mb-1">Failed/Not Found</p>
                                         <p className="text-white text-3xl font-bold">{summary.failed}</p>
                                     </div>
                                 </div>
@@ -305,9 +367,13 @@ export default function LetterboxdImporter() {
                                                         )}
                                                     </td>
                                                     <td className="p-3">
-                                                        {result.matched ? (
+                                                        {result.saved ? (
                                                             <span className="inline-block bg-green-500/20 text-green-300 text-xs font-semibold px-3 py-1 rounded-full">
-                                                                ✓ Matched
+                                                                ✓ Saved
+                                                            </span>
+                                                        ) : result.matched ? (
+                                                            <span className="inline-block bg-yellow-500/20 text-yellow-300 text-xs font-semibold px-3 py-1 rounded-full">
+                                                                ⚠ Save Error
                                                             </span>
                                                         ) : (
                                                             <span className="inline-block bg-red-500/20 text-red-300 text-xs font-semibold px-3 py-1 rounded-full">
