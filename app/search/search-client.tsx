@@ -221,9 +221,9 @@ export default function SearchClient() {
             setShowLogModal(false);
             setSelectedMedia(null);
             // Ideally trigger a toast here
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('Failed to log entry');
+            alert(`Failed to log entry: ${err.message || 'Unknown error'}`);
         } finally {
             setIsSavingLog(false);
         }
