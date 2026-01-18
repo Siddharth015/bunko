@@ -3,18 +3,20 @@
 import { useState, useEffect, useDeferredValue } from 'react';
 import { useAuth, supabase } from '../components/AuthProvider';
 import AuthModal from '../components/AuthModal';
+import LogModal from '../components/LogModal';
 
 interface MediaResult {
     id: string;
     title: string;
-    type: 'movie' | 'anime' | 'book';
+    type: 'movie' | 'anime' | 'book' | 'tv';
     imageUrl: string | null;
     year: number | null;
 }
 
-function MediaCard({ media, onAdd, isAdding }: { media: MediaResult; onAdd: () => void; isAdding: boolean }) {
+function MediaCard({ media, onLibraryAdd, onLogClick, isAdding }: { media: MediaResult; onLibraryAdd: () => void; onLogClick: () => void; isAdding: boolean }) {
     const badgeColors = {
         movie: 'from-blue-500 to-cyan-500',
+        tv: 'from-orange-500 to-amber-500',
         anime: 'from-pink-500 to-rose-500',
         book: 'from-green-500 to-emerald-500',
     };
@@ -40,29 +42,46 @@ function MediaCard({ media, onAdd, isAdding }: { media: MediaResult; onAdd: () =
                     )}
 
                     {/* Badge */}
-                    <div className={`absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r ${badgeColors[media.type]} text-white text-xs font-bold uppercase shadow-lg`}>
+                    <div className={`absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r ${badgeColors[media.type] || badgeColors.movie} text-white text-xs font-bold uppercase shadow-lg`}>
                         {media.type}
                     </div>
 
-                    {/* Add Button Overlay */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                    {/* Action Buttons Overlay */}
+                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-sm p-4">
+
+                        {/* 1. Log / Watched Button */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onAdd();
+                                onLogClick();
+                            }}
+                            className="w-full bg-white text-black font-bold py-3 px-4 rounded-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 hover:bg-gray-200 shadow-lg shadow-white/10"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Watched
+                        </button>
+
+                        {/* 2. Library / Plan to Watch Button */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onLibraryAdd();
                             }}
                             disabled={isAdding}
-                            className="bg-white text-black font-bold py-3 px-6 rounded-full transform scale-90 hover:scale-100 transition-transform flex items-center gap-2 hover:bg-gray-200"
+                            className="w-full bg-white/10 text-white font-semibold py-3 px-4 rounded-xl border border-white/20 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75 flex items-center justify-center gap-2 hover:bg-white/20"
                         >
                             {isAdding ? (
-                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                 </svg>
                             )}
-                            {isAdding ? 'Adding...' : 'Add to Library'}
+                            {isAdding ? 'Adding...' : 'Library'}
                         </button>
+
                     </div>
                 </div>
 
@@ -99,14 +118,15 @@ export default function SearchClient() {
     const [results, setResults] = useState<MediaResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [breakdown, setBreakdown] = useState({ movies: 0, anime: 0, books: 0 });
+    const [breakdown, setBreakdown] = useState({ movies: 0, anime: 0, books: 0, tv: 0 });
 
     const deferredSearch = useDeferredValue(searchInput);
 
+    // Search Effect
     useEffect(() => {
         if (!deferredSearch || deferredSearch.trim().length < 2) {
             setResults([]);
-            setBreakdown({ movies: 0, anime: 0, books: 0 });
+            setBreakdown({ movies: 0, anime: 0, books: 0, tv: 0 });
             return;
         }
 
@@ -120,7 +140,7 @@ export default function SearchClient() {
 
                 const data = await response.json();
                 setResults(data.results || []);
-                setBreakdown(data.breakdown || { movies: 0, anime: 0, books: 0 });
+                setBreakdown(data.breakdown || { movies: 0, anime: 0, books: 0, tv: 0 });
             } catch (err) {
                 setError('Failed to search. Please try again.');
                 setResults([]);
@@ -132,40 +152,47 @@ export default function SearchClient() {
         performSearch();
     }, [deferredSearch]);
 
+    // Auth & Modal State
     const { user } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showLogModal, setShowLogModal] = useState(false);
+    const [selectedMedia, setSelectedMedia] = useState<MediaResult | null>(null);
+    const [isSavingLog, setIsSavingLog] = useState(false);
     const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
 
+    // Helper to call API
+    const saveMediaEntry = async (media: MediaResult, extraData: any) => {
+        const session = (await supabase.auth.getSession()).data.session;
+        if (!session) throw new Error('No session');
+
+        const res = await fetch('/api/library', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                mediaId: media.id,
+                mediaType: media.type,
+                title: media.title,
+                year: media.year,
+                imageUrl: media.imageUrl,
+                ...extraData
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to save');
+    };
+
+    // 1. Handle "Add to Library" (Quick Add)
     const handleAddToLibrary = async (media: MediaResult) => {
-        if (!user) {
-            setShowAuthModal(true);
-            return;
-        }
+        if (!user) { setShowAuthModal(true); return; }
 
         setAddingIds(prev => new Set(prev).add(media.id));
 
         try {
-            const res = await fetch('/api/library', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-                },
-                body: JSON.stringify({
-                    mediaId: media.id,
-                    mediaType: media.type,
-                    title: media.title,
-                    year: media.year,
-                    imageUrl: media.imageUrl
-                })
-            });
-
-            if (!res.ok) throw new Error('Failed to add');
-
-            // Show toast or success state? For now just stop loading
-            // Ideally we'd have a toast library. 
-            // We'll simulate a brief "Checked" state by keeping it in 'addingIds' or moving to a 'addedIds' set.
-            // But for this step, just resetting loading state.
+            await saveMediaEntry(media, { status: 'PLAN_TO_WATCH' });
+            // Ideally assume success or show toast
         } catch (err) {
             console.error(err);
             alert('Failed to add to library');
@@ -178,9 +205,41 @@ export default function SearchClient() {
         }
     };
 
+    // 2. Handle "Log/Watched" Click (Opens Modal)
+    const handleLogClick = (media: MediaResult) => {
+        if (!user) { setShowAuthModal(true); return; }
+        setSelectedMedia(media);
+        setShowLogModal(true);
+    };
+
+    // 3. Handle Saving from Log Modal
+    const handleLogSave = async (data: { status: 'WATCHED' | 'PLAN_TO_WATCH'; rating?: number; review?: string }) => {
+        if (!selectedMedia) return;
+        setIsSavingLog(true);
+        try {
+            await saveMediaEntry(selectedMedia, data);
+            setShowLogModal(false);
+            setSelectedMedia(null);
+            // Ideally trigger a toast here
+        } catch (err) {
+            console.error(err);
+            alert('Failed to log entry');
+        } finally {
+            setIsSavingLog(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black relative overflow-hidden pt-20">
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+            <LogModal
+                isOpen={showLogModal}
+                onClose={() => setShowLogModal(false)}
+                onSave={handleLogSave}
+                mediaTitle={selectedMedia?.title || ''}
+                isSaving={isSavingLog}
+            />
 
             {/* Background */}
             <div className="fixed inset-0 opacity-40 pointer-events-none">
@@ -196,7 +255,7 @@ export default function SearchClient() {
                         Universal Search
                     </h1>
                     <p className="text-xl text-gray-400">
-                        Movies, anime, and books—all in one search
+                        Movies, Series, Anime, and Books—all in one place
                     </p>
                 </div>
 
@@ -212,7 +271,7 @@ export default function SearchClient() {
                                 type="text"
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search for anything..."
+                                placeholder="Search here... (e.g. Breaking Bad)"
                                 className="w-full pl-16 pr-6 py-5 bg-white/5 backdrop-blur-xl text-white rounded-2xl border border-white/10 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg placeholder-gray-500"
                             />
                         </div>
@@ -221,9 +280,12 @@ export default function SearchClient() {
 
                 {/* Stats */}
                 {results.length > 0 && !loading && (
-                    <div className="flex gap-3 justify-center mb-12">
+                    <div className="flex gap-3 justify-center mb-12 flex-wrap">
                         <div className="px-6 py-3 bg-blue-500/10 border border-blue-500/30 rounded-full backdrop-blur-sm">
                             <span className="text-blue-300 font-semibold">{breakdown.movies} Movies</span>
+                        </div>
+                        <div className="px-6 py-3 bg-orange-500/10 border border-orange-500/30 rounded-full backdrop-blur-sm">
+                            <span className="text-orange-300 font-semibold">{breakdown.tv} TV Shows</span>
                         </div>
                         <div className="px-6 py-3 bg-pink-500/10 border border-pink-500/30 rounded-full backdrop-blur-sm">
                             <span className="text-pink-300 font-semibold">{breakdown.anime} Anime</span>
@@ -249,34 +311,18 @@ export default function SearchClient() {
                             <MediaCard
                                 key={media.id}
                                 media={media}
-                                onAdd={() => handleAddToLibrary(media)}
+                                onLibraryAdd={() => handleAddToLibrary(media)}
+                                onLogClick={() => handleLogClick(media)}
                                 isAdding={addingIds.has(media.id)}
                             />
                         ))}
                     </div>
                 )}
 
-                {/* Empty States */}
+                {/* Empty State */}
                 {!loading && !error && searchInput && results.length === 0 && deferredSearch.length >= 2 && (
                     <div className="text-center py-20">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
-                            <svg className="w-10 h-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
                         <p className="text-gray-400 text-lg">No results found for "{deferredSearch}"</p>
-                    </div>
-                )}
-
-                {!searchInput && (
-                    <div className="text-center py-20">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                            <svg className="w-10 h-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <p className="text-gray-400 text-lg mb-4">Start typing to discover media</p>
-                        <p className="text-gray-600 text-sm">Try searching for "Inception", "Naruto", or "Harry Potter"</p>
                     </div>
                 )}
             </div>

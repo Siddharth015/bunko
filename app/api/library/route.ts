@@ -22,31 +22,39 @@ export async function POST(request: Request) {
 
         // 2. Parse Request Body
         const body = await request.json();
-        const { mediaId, mediaType, title, imageUrl, year } = body;
+        const { mediaId, mediaType, title, imageUrl, year, status, rating, review } = body;
 
         if (!mediaId || !mediaType) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // 3. Convert type to DB Enum (movie -> MOVIE)
+        // 3. Convert type to DB Enum
         const dbMediaType = mediaType.toUpperCase();
-        if (!['MOVIE', 'WEB_SERIES', 'TV', 'ANIME', 'BOOK'].includes(dbMediaType)) {
-            // Allow TV. It matches the 'TV' enum we just added.
-        }
 
-        // 4. Perform Insert (Upsert to prevent duplicates)
+        // 4. Perform Insert (Upsert)
+        const upsertData: any = {
+            user_id: user.id,
+            media_id: mediaId.toString(),
+            media_type: dbMediaType as 'MOVIE' | 'BOOK' | 'ANIME' | 'TV',
+            status: status || 'PLAN_TO_WATCH',
+            updated_at: new Date().toISOString(),
+            // New Columns (Saved for faster profile loading)
+            title: title || null,
+            image_url: imageUrl || null,
+            year: year || null
+        };
+
+        // Only add optional fields if they exist to avoid overwriting with null
+        if (rating !== undefined) upsertData.rating = rating;
+        if (review !== undefined) upsertData.review = review;
+
         const { data, error } = await supabase
             .from('media_entries')
             .upsert(
-                {
-                    user_id: user.id,
-                    media_id: mediaId.toString(),
-                    media_type: dbMediaType as 'MOVIE' | 'BOOK' | 'ANIME' | 'TV',
-                    status: 'PLAN_TO_WATCH',
-                },
+                upsertData,
                 {
                     onConflict: 'user_id,media_id,media_type',
-                    ignoreDuplicates: true
+                    ignoreDuplicates: false
                 }
             )
             .select()
