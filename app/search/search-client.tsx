@@ -181,7 +181,10 @@ export default function SearchClient() {
             })
         });
 
-        if (!res.ok) throw new Error('Failed to save');
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || `Server Error: ${res.status}`);
+        }
     };
 
     // 1. Handle "Add to Library" (Quick Add)
