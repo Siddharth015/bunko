@@ -4,7 +4,7 @@
 export interface MediaEntry {
     media_id: string;
     media_type: 'MOVIE' | 'TV' | 'ANIME' | 'BOOK';
-    status: 'WATCHED' | 'PLAN_TO_WATCH';
+    status: 'COMPLETED' | 'PLAN_TO_WATCH';
     rating?: number;
     review?: string;
     title?: string;
@@ -76,9 +76,9 @@ export default function ProfileMediaGrid({ entries, showRating = false }: MediaG
                                     {entry.year || '----'}
                                 </span>
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${entry.media_type === 'MOVIE' ? 'border-blue-500/50 text-blue-400' :
-                                        entry.media_type === 'TV' ? 'border-orange-500/50 text-orange-400' :
-                                            entry.media_type === 'ANIME' ? 'border-pink-500/50 text-pink-400' :
-                                                'border-green-500/50 text-green-400'
+                                    entry.media_type === 'TV' ? 'border-orange-500/50 text-orange-400' :
+                                        entry.media_type === 'ANIME' ? 'border-pink-500/50 text-pink-400' :
+                                            'border-green-500/50 text-green-400'
                                     }`}>
                                     {entry.media_type}
                                 </span>

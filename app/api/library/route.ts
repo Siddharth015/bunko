@@ -32,11 +32,14 @@ export async function POST(request: Request) {
         const dbMediaType = mediaType.toUpperCase();
 
         // 4. Perform Insert (Upsert)
+        let finalStatus = status || 'PLAN_TO_WATCH';
+        if (finalStatus === 'WATCHED') finalStatus = 'COMPLETED';
+
         const upsertData: any = {
             user_id: user.id,
             media_id: mediaId.toString(),
             media_type: dbMediaType as 'MOVIE' | 'BOOK' | 'ANIME' | 'TV',
-            status: status || 'PLAN_TO_WATCH',
+            status: finalStatus,
             updated_at: new Date().toISOString(),
             // New Columns (Saved for faster profile loading)
             title: title || null,

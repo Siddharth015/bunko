@@ -31,8 +31,8 @@ export default function ProfileClient({ profile, mediaEntries, isOwnProfile }: P
         }
 
         // 2. Filter by View Mode (Status)
-        // History = WATCHED, Library = PLAN_TO_WATCH
-        const statusTarget = viewMode === 'history' ? 'WATCHED' : 'PLAN_TO_WATCH';
+        // History = COMPLETED, Library = PLAN_TO_WATCH
+        const statusTarget = viewMode === 'history' ? 'COMPLETED' : 'PLAN_TO_WATCH';
         entries = entries.filter(e => e.status === statusTarget);
 
         // 3. Sort
@@ -42,7 +42,7 @@ export default function ProfileClient({ profile, mediaEntries, isOwnProfile }: P
     }, [activeTab, viewMode, mediaEntries]);
 
     // Stats Logic
-    const totalWatched = mediaEntries.filter(e => e.status === 'WATCHED').length;
+    const totalWatched = mediaEntries.filter(e => e.status === 'COMPLETED').length;
     const level = Math.floor(totalWatched / 5) + 1; // Simple level calc: 1 level per 5 items
 
     return (
