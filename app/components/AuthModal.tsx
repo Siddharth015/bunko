@@ -111,24 +111,31 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                 <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50"></div>
                 <div className="bg-black border-2 border-white p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] text-center">
+                    {/* Close Button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+                    >
+                        <div className="w-6 h-6 border border-transparent hover:border-white flex items-center justify-center font-mono">X</div>
+                    </button>
+
                     <div className="mb-6 flex justify-center">
                         <div className="p-4 bg-white/10 rounded-full">
-                            <PixelIcon type="search" size={48} /> {/* Using search icon as generic placeholder or add 'mail' if available */}
+                            <PixelIcon type="search" size={48} />
                         </div>
                     </div>
                     <h2 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter font-mono">
-                        Verify_Protocol
+                        Check Your Inbox
                     </h2>
                     <p className="text-gray-400 font-mono text-sm mb-8 leading-relaxed">
-                        Access link dispatched to <span className="text-white font-bold">{email}</span>.
-                        <br />Please confirm identity to establish uplink.
+                        We've sent a verification link to <span className="text-white font-bold">{email}</span>.
+                        <br /><br />
+                        Please click the link to activate your account.
                     </p>
-                    <button
-                        onClick={onClose}
-                        className="w-full font-bold font-mono py-4 bg-white text-black uppercase tracking-widest hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all"
-                    >
-                        Acknowledge
-                    </button>
+
+                    <div className="text-purple-500 font-mono text-xs uppercase tracking-widest mb-6">
+                        Waiting for confirmation...
+                    </div>
                     <div className="mt-4">
                         <button
                             onClick={() => setCheckEmail(false)}
@@ -162,12 +169,12 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                         <PixelIcon type="search" size={32} />
                     </div>
                     <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter font-mono">
-                        {tab === 'signin' ? 'System_Login' : 'User_Registration'}
+                        {tab === 'signin' ? 'Welcome Back' : 'Join the Club'}
                     </h2>
                     <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">
                         {tab === 'signin'
-                            ? 'Authenticate to access logs'
-                            : 'Initialize new user'}
+                            ? 'Sign in to access your journal'
+                            : 'Start your collection today'}
                     </p>
                 </div>
 
@@ -213,7 +220,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
 
                     <div>
                         <label className="block text-xs font-bold font-mono text-gray-500 mb-2 uppercase">
-                            Email_Address
+                            Email Address
                         </label>
                         <input
                             type="email"
@@ -263,7 +270,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                             ${tab === 'signin' ? 'bg-white text-black' : 'bg-purple-600 text-white'}
                         `}
                     >
-                        {loading ? 'PROCESSING...' : tab === 'signin' ? 'AUTHENTICATE >' : 'INITIALIZE >'}
+                        {loading ? 'PROCESSING...' : tab === 'signin' ? 'LOG IN' : 'CREATE ACCOUNT'}
                     </button>
                 </form>
 
@@ -271,12 +278,12 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                 <div className="mt-8 text-center text-xs font-mono text-gray-600">
                     {tab === 'signin' ? (
                         <>
-                            NO ACCESS CARD?{' '}
+                            NO ACCOUNT?{' '}
                             <button
                                 onClick={() => setTab('signup')}
                                 className="text-purple-500 hover:text-white underline decoration-dotted underline-offset-4"
                             >
-                                REQUEST_ENTRY
+                                SIGN UP
                             </button>
                         </>
                     ) : (

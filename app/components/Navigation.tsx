@@ -21,10 +21,12 @@ export default function Navigation() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const username = user?.user_metadata?.username || user?.email?.split('@')[0];
+
     const navItems = [
         { name: 'Home', href: '/' },
         { name: 'Search', href: '/search' },
-        { name: 'Import', href: '/import' },
+        ...(username ? [{ name: 'My Logs', href: `/profile/${username}` }] : []),
     ];
 
     return (

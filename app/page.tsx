@@ -103,36 +103,36 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-white/10">
 
-            {/* Feature 1 */}
+            {/* Feature 1 - The Media Journal */}
             <div className="p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/5 transition-colors group">
-              <div className="mb-6 text-purple-500 group-hover:text-white transition-colors">
-                <PixelIcon type="search" size={48} />
+              <div className="mb-6 text-pink-500 group-hover:text-white transition-colors">
+                <PixelIcon type="heart" size={48} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">Unified Search</h3>
+              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">The Media Journal</h3>
               <p className="text-gray-400 leading-relaxed">
-                One search bar for everything. Movies (TMDb), Anime (AniList), and Books (Google Books).
+                Track every movie, show, anime, and book in one place. No more switching between different apps or spreadsheets.
               </p>
             </div>
 
-            {/* Feature 2 */}
+            {/* Feature 2 - Social */}
             <div className="p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/10 hover:bg-white/5 transition-colors group">
               <div className="mb-6 text-yellow-400 group-hover:text-white transition-colors">
                 <PixelIcon type="lightning" size={48} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">Instant Access</h3>
+              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">Share The Hype</h3>
               <p className="text-gray-400 leading-relaxed">
-                Zero lag. Optimized for speed so you can look up and log in seconds, not minutes.
+                Don't watch alone. Review, rate, and share your profile with friends to see who has the better taste.
               </p>
             </div>
 
-            {/* Feature 3 */}
+            {/* Feature 3 - Gamification */}
             <div className="p-8 md:p-12 hover:bg-white/5 transition-colors group">
               <div className="mb-6 text-blue-500 group-hover:text-white transition-colors">
-                <PixelIcon type="disk" size={48} />
+                <PixelIcon type="star" size={48} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">Detailed Stats</h3>
+              <h3 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">Gamify Your Passion</h3>
               <p className="text-gray-400 leading-relaxed">
-                Visualize your habits. Track your generic XP and level up as you consume more media.
+                Turn consumption into an RPG. Earn XP for every story you complete and watch your profile level up.
               </p>
             </div>
           </div>
