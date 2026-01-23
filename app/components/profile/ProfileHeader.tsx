@@ -86,24 +86,25 @@ export default function ProfileHeader({ username, bio, avatarUrl, level, totalWa
                 </div>
 
                 {/* User Info */}
-                <div className="flex-1 w-full">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-2 md:mb-0">
+                {/* User Info */}
+                <div className="flex-1 w-full min-w-0">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                            <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none break-all">
                                 {username}
                             </h1>
                             {topPercent && (
-                                <div className="bg-yellow-400 text-black text-xs font-black px-2 py-1 uppercase transform -skew-x-12 border-2 border-white">
+                                <div className="bg-yellow-400 text-black text-[10px] md:text-xs font-black px-2 py-1 uppercase transform -skew-x-12 border-2 border-white whitespace-nowrap">
                                     {topPercent}
                                 </div>
                             )}
                         </div>
 
                         {/* Level Badge */}
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 self-end lg:self-auto">
                             <div className="text-right">
-                                <div className="text-xs text-gray-400 font-mono uppercase tracking-widest">Current_Level</div>
-                                <div className="text-3xl font-black text-purple-500 font-mono leading-none">LVL.{String(level).padStart(2, '0')}</div>
+                                <div className="text-[10px] md:text-xs text-gray-400 font-mono uppercase tracking-widest">Current_Level</div>
+                                <div className="text-2xl md:text-3xl font-black text-purple-500 font-mono leading-none">LVL.{String(level).padStart(2, '0')}</div>
                             </div>
                         </div>
                     </div>

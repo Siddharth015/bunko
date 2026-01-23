@@ -288,9 +288,12 @@ export default function SearchClient() {
                             System_Online
                         </span>
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">
-                        Media_Discovery<span className="text-purple-500">_Uplink</span>
+                    <h1 className="text-3xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter leading-tight break-words px-4">
+                        START <span className="text-purple-500">LOGGING</span>
                     </h1>
+                    <p className="text-gray-500 font-mono text-xs md:text-sm uppercase tracking-widest">
+                        What are you diving into today?
+                    </p>
                 </div>
 
                 {/* Search Bar - Terminal Style */}

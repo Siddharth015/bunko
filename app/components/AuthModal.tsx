@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from './AuthProvider';
+import PixelIcon from './PixelIcon';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -49,6 +50,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     setError('Username can only contain letters, numbers, and underscores');
                     setLoading(false);
                     return;
+
                 }
 
                 const { error } = await signUp(email, password, username);
@@ -75,139 +77,141 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-md w-full relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            {/* Grid Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50"></div>
+
+            <div className="bg-black border-2 border-white p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)]">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                    className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
                 >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <div className="w-6 h-6 border border-transparent hover:border-white flex items-center justify-center font-mono">X</div>
                 </button>
 
                 {/* Header */}
-                <div className="text-center mb-6">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl inline-block mb-4">
-                        <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                        </svg>
+                <div className="text-center mb-8">
+                    <div className="inline-block border border-white/20 p-4 mb-4 bg-white/5">
+                        <PixelIcon type="search" size={32} />
                     </div>
-                    <h2 className="text-3xl font-bold text-white mb-2">
-                        {tab === 'signin' ? 'Welcome Back' : 'Create Account'}
+                    <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter font-mono">
+                        {tab === 'signin' ? 'System_Login' : 'User_Registration'}
                     </h2>
-                    <p className="text-gray-400">
+                    <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">
                         {tab === 'signin'
-                            ? 'Sign in to access your media library'
-                            : 'Start tracking your favorite media today'}
+                            ? 'Authenticate to access logs'
+                            : 'Initialize new user protocol'}
                     </p>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 bg-gray-800/50 p-1 rounded-lg">
+                <div className="flex mb-8 border border-white/20">
                     <button
                         onClick={() => setTab('signin')}
-                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${tab === 'signin'
-                            ? 'bg-purple-600 text-white'
-                            : 'text-gray-400 hover:text-white'
+                        className={`flex-1 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-all ${tab === 'signin'
+                            ? 'bg-white text-black'
+                            : 'bg-black text-gray-500 hover:text-white hover:bg-white/10'
                             }`}
                     >
-                        Sign In
+                        Login
                     </button>
                     <button
                         onClick={() => setTab('signup')}
-                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${tab === 'signup'
-                            ? 'bg-purple-600 text-white'
-                            : 'text-gray-400 hover:text-white'
+                        className={`flex-1 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-all ${tab === 'signup'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-black text-gray-500 hover:text-white hover:bg-white/10'
                             }`}
                     >
-                        Sign Up
+                        Register
                     </button>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     {tab === 'signup' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-xs font-bold font-mono text-gray-500 mb-2 uppercase">
                                 Username
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-                                placeholder="johndoe"
+                                className="w-full px-4 py-3 bg-black border border-white/20 text-white font-mono placeholder-gray-700 focus:outline-none focus:border-purple-500 transition-colors"
+                                placeholder="CODENAME"
                                 required
                             />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Email
+                        <label className="block text-xs font-bold font-mono text-gray-500 mb-2 uppercase">
+                            Email_Address
                         </label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-                            placeholder="you@example.com"
+                            className="w-full px-4 py-3 bg-black border border-white/20 text-white font-mono placeholder-gray-700 focus:outline-none focus:border-purple-500 transition-colors"
+                            placeholder="USER@DOMAIN.COM"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-xs font-bold font-mono text-gray-500 mb-2 uppercase">
                             Password
                         </label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-                            placeholder="••••••••"
+                            className="w-full px-4 py-3 bg-black border border-white/20 text-white font-mono placeholder-gray-700 focus:outline-none focus:border-purple-500 transition-colors"
+                            placeholder="********"
                             required
                             minLength={6}
                         />
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
-                            {error}
+                        <div className="bg-red-900/20 border border-red-500/50 text-red-500 px-4 py-3 font-mono text-xs">
+                            ERROR: {error}
                         </div>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all"
+                        className={`w-full font-bold font-mono py-4 uppercase tracking-widest transition-all
+                            ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]'}
+                            ${tab === 'signin' ? 'bg-white text-black' : 'bg-purple-600 text-white'}
+                        `}
                     >
-                        {loading ? 'Loading...' : tab === 'signin' ? 'Sign In' : 'Create Account'}
+                        {loading ? 'PROCESSING...' : tab === 'signin' ? 'AUTHENTICATE >' : 'INITIALIZE >'}
                     </button>
                 </form>
 
                 {/* Footer */}
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className="mt-8 text-center text-xs font-mono text-gray-600">
                     {tab === 'signin' ? (
                         <>
-                            Don't have an account?{' '}
+                            NO ACCESS CARD?{' '}
                             <button
                                 onClick={() => setTab('signup')}
-                                className="text-purple-400 hover:text-purple-300 font-medium"
+                                className="text-purple-500 hover:text-white underline decoration-dotted underline-offset-4"
                             >
-                                Sign up
+                                REQUEST_ENTRY
                             </button>
                         </>
                     ) : (
                         <>
-                            Already have an account?{' '}
+                            ALREADY REGISTERED?{' '}
                             <button
                                 onClick={() => setTab('signin')}
-                                className="text-purple-400 hover:text-purple-300 font-medium"
+                                className="text-white hover:text-purple-400 underline decoration-dotted underline-offset-4"
                             >
-                                Sign in
+                                LOGIN
                             </button>
                         </>
                     )}

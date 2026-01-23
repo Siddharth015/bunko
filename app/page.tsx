@@ -145,7 +145,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row gap-12 items-center">
             <div className="w-full md:w-1/2">
               <h2 className="text-4xl md:text-5xl font-black text-white mb-8 uppercase">
-                Built for <span className="text-purple-500">Collectors</span>
+                Built for <span className="text-purple-500">Trackers</span>
               </h2>
               <div className="space-y-4">
                 {['Universal Database', 'Profile Sharing', 'XP & Levelling'].map((item, i) => (
@@ -153,7 +153,7 @@ export default function Home() {
                     onClick={() => setActiveFeature(i)}
                     className={`cursor-pointer p-4 border-l-4 transition-all ${activeFeature === i ? 'border-purple-500 bg-white/5' : 'border-gray-700 hover:border-white'}`}
                   >
-                    <h4 className="text-xl font-bold text-white uppercase">{item}</h4>
+                    <h4 className="text-lg md:text-xl font-bold text-white uppercase tracking-wider">{item}</h4>
                   </div>
                 ))}
               </div>
