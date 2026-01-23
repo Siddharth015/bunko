@@ -17,6 +17,8 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
     const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [checkEmail, setCheckEmail] = useState(false);
 
     const { signIn, signUp } = useAuth();
 
@@ -50,12 +52,17 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     setError('Username can only contain letters, numbers, and underscores');
                     setLoading(false);
                     return;
-
                 }
 
-                const { error } = await signUp(email, password, username);
+                const { data, error } = await signUp(email, password, username);
                 if (error) throw error;
-                onClose();
+
+                // If signup successful but no session, it implies email verification is required
+                if (data?.user && !data.session) {
+                    setCheckEmail(true);
+                } else {
+                    onClose();
+                }
             }
         } catch (err: any) {
             console.error('Sign up/in error:', err);
@@ -75,6 +82,42 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
             setLoading(false);
         }
     };
+
+    if (checkEmail) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-50"></div>
+                <div className="bg-black border-2 border-white p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] text-center">
+                    <div className="mb-6 flex justify-center">
+                        <div className="p-4 bg-white/10 rounded-full">
+                            <PixelIcon type="search" size={48} /> {/* Using search icon as generic placeholder or add 'mail' if available */}
+                        </div>
+                    </div>
+                    <h2 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter font-mono">
+                        Verify_Protocol
+                    </h2>
+                    <p className="text-gray-400 font-mono text-sm mb-8 leading-relaxed">
+                        Access link dispatched to <span className="text-white font-bold">{email}</span>.
+                        <br />Please confirm identity to establish uplink.
+                    </p>
+                    <button
+                        onClick={onClose}
+                        className="w-full font-bold font-mono py-4 bg-white text-black uppercase tracking-widest hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all"
+                    >
+                        Acknowledge
+                    </button>
+                    <div className="mt-4">
+                        <button
+                            onClick={() => setCheckEmail(false)}
+                            className="text-xs font-mono text-gray-500 hover:text-white underline decoration-dotted"
+                        >
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
@@ -163,15 +206,24 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                         <label className="block text-xs font-bold font-mono text-gray-500 mb-2 uppercase">
                             Password
                         </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-black border border-white/20 text-white font-mono placeholder-gray-700 focus:outline-none focus:border-purple-500 transition-colors"
-                            placeholder="********"
-                            required
-                            minLength={6}
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 bg-black border border-white/20 text-white font-mono placeholder-gray-700 focus:outline-none focus:border-purple-500 transition-colors pr-16"
+                                placeholder="********"
+                                required
+                                minLength={6}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-gray-500 hover:text-white uppercase px-2 py-1"
+                            >
+                                {showPassword ? 'HIDE' : 'SHOW'}
+                            </button>
+                        </div>
                     </div>
 
                     {error && (

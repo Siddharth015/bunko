@@ -92,6 +92,7 @@ export default function SearchClient() {
     const [error, setError] = useState<string | null>(null);
     const [breakdown, setBreakdown] = useState({ movies: 0, anime: 0, books: 0, tv: 0 });
     const [activeFilter, setActiveFilter] = useState<'all' | 'movie' | 'tv' | 'anime' | 'book'>('all');
+    const [sortBy, setSortBy] = useState<'relevance' | 'popularity'>('relevance');
 
     const deferredSearch = useDeferredValue(searchInput);
 
@@ -106,10 +107,18 @@ export default function SearchClient() {
         const performSearch = async () => {
             setLoading(true);
             setError(null);
-            setActiveFilter('all');
+
+            // Only reset filter if query changes significantly, but maybe we want to keep it?
+            // Prior behavior reset it. Let's keep it reset for fresh search, but not for sort.
+            // Actually, if we add sortBy to deps, we don't want to reset activeFilter every time we sort.
+            // We should separate "Query Changed" logic from "Fetch" logic maybe?
+            // For now, simpler: check if query changed vs sort changed.
+            // But React effect runs on any change.
+            // Let's just NOT reset activeFilter here to be safe and kinder to UX.
+            // setActiveFilter('all'); 
 
             try {
-                const response = await fetch(`/api/search?query=${encodeURIComponent(deferredSearch)}`);
+                const response = await fetch(`/api/search?query=${encodeURIComponent(deferredSearch)}&sort=${sortBy}`);
                 if (!response.ok) throw new Error('Search failed');
 
                 const data = await response.json();
@@ -124,7 +133,7 @@ export default function SearchClient() {
         };
 
         performSearch();
-    }, [deferredSearch]);
+    }, [deferredSearch, sortBy]);
 
     // Auth & Modal State
     const { user } = useAuth();
@@ -297,7 +306,7 @@ export default function SearchClient() {
                 </div>
 
                 {/* Search Bar - Terminal Style */}
-                <div className="max-w-3xl mx-auto mb-16">
+                <div className="max-w-3xl mx-auto mb-8">
                     <div className="group relative">
                         <div className="absolute -inset-1 bg-white/10 blur opacity-25 group-focus-within:opacity-75 transition duration-500"></div>
                         <div className="relative flex items-center bg-black border-2 border-white/20 group-focus-within:border-white transition-colors">
@@ -320,6 +329,27 @@ export default function SearchClient() {
                         </div>
                     </div>
                 </div>
+
+                {/* Sort Control */}
+                {results.length > 0 && !loading && (
+                    <div className="flex justify-center mb-8">
+                        <div className="flex items-center gap-2 text-xs font-mono bg-black border border-white/20 p-1 rounded-sm">
+                            <span className="text-gray-500 px-2 uppercase">Sort By:</span>
+                            <button
+                                onClick={() => setSortBy('relevance')}
+                                className={`px-3 py-1 uppercase transition-colors ${sortBy === 'relevance' ? 'bg-white text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Relevance
+                            </button>
+                            <button
+                                onClick={() => setSortBy('popularity')}
+                                className={`px-3 py-1 uppercase transition-colors ${sortBy === 'popularity' ? 'bg-white text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Popularity
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats Chips (Clickable Filters) */}
                 {results.length > 0 && !loading && (

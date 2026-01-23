@@ -17,9 +17,12 @@ export interface MediaEntry {
 interface ProfileMediaGridProps {
     entries: MediaEntry[];
     viewMode: 'history' | 'library' | 'watching';
+    isOwnProfile?: boolean;
+    onEdit?: (entry: MediaEntry) => void;
+    onDelete?: (entry: MediaEntry) => void;
 }
 
-export default function ProfileMediaGrid({ entries, viewMode }: ProfileMediaGridProps) {
+export default function ProfileMediaGrid({ entries, viewMode, isOwnProfile, onEdit, onDelete }: ProfileMediaGridProps) {
 
     if (entries.length === 0) {
         return (
@@ -36,7 +39,7 @@ export default function ProfileMediaGrid({ entries, viewMode }: ProfileMediaGrid
         return (
             <div className="flex flex-col gap-4">
                 {entries.map((entry) => (
-                    <div key={`${entry.media_id}-${entry.media_type}`} className="flex gap-4 md:gap-6 bg-black border border-white/10 p-4 hover:border-white/30 transition-colors group">
+                    <div key={`${entry.media_id}-${entry.media_type}`} className="flex gap-4 md:gap-6 bg-black border border-white/10 p-4 hover:border-white/30 transition-colors group relative">
                         {/* Poster */}
                         <div className="flex-shrink-0 w-24 md:w-32 aspect-[2/3] bg-gray-800 relative overflow-hidden border border-white/10">
                             {entry.image_url ? (
@@ -73,6 +76,30 @@ export default function ProfileMediaGrid({ entries, viewMode }: ProfileMediaGrid
                                 )}
                             </div>
                         </div>
+
+                        {/* Actions (Only if Own Profile) */}
+                        {isOwnProfile && (
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => onEdit?.(entry)}
+                                    className="p-1 bg-white text-black hover:bg-purple-400 transition-colors"
+                                    title="Edit"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => onDelete?.(entry)}
+                                    className="p-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                                    title="Delete"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -99,6 +126,24 @@ export default function ProfileMediaGrid({ entries, viewMode }: ProfileMediaGrid
                         <div className="mt-2 text-xs font-mono uppercase text-purple-400">
                             {entry.media_type}
                         </div>
+
+                        {/* Actions */}
+                        {isOwnProfile && (
+                            <div className="mt-3 flex gap-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onEdit?.(entry); }}
+                                    className="flex-1 py-1 bg-white text-black text-xs font-bold hover:bg-purple-400"
+                                >
+                                    EDIT
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onDelete?.(entry); }}
+                                    className="flex-1 py-1 bg-red-600 text-white text-xs font-bold hover:bg-red-700"
+                                >
+                                    DEL
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}

@@ -11,6 +11,7 @@ export interface MediaResult {
     type: 'movie' | 'anime' | 'book' | 'tv';
     imageUrl: string | null;
     year: number | null;
+    popularity: number;
 }
 
 // ============================================
@@ -39,6 +40,7 @@ async function fetchTMDbResults(query: string): Promise<MediaResult[]> {
             type: 'movie' as const,
             imageUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
             year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+            popularity: movie.popularity || 0,
         }));
     } catch (error) {
         console.error('TMDb fetch error:', error);
@@ -68,6 +70,7 @@ async function fetchTMDbTVResults(query: string): Promise<MediaResult[]> {
             type: 'tv' as const,
             imageUrl: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : null,
             year: show.first_air_date ? new Date(show.first_air_date).getFullYear() : null,
+            popularity: show.popularity || 0,
         }));
     } catch (error) {
         console.error('TMDb TV fetch error:', error);
@@ -87,6 +90,7 @@ async function fetchAniListResults(query: string): Promise<MediaResult[]> {
             title { romaji english }
             coverImage { large }
             startDate { year }
+            popularity
         }
       }
     }
@@ -109,6 +113,7 @@ async function fetchAniListResults(query: string): Promise<MediaResult[]> {
             type: 'anime' as const,
             imageUrl: anime.coverImage?.large || null,
             year: anime.startDate?.year || null,
+            popularity: (anime.popularity || 0) / 100, // Normalize AniList popularity (usually huge) to compare better with TMDb
         }));
     } catch (error) {
         console.error('AniList fetch error:', error);
@@ -134,6 +139,7 @@ async function fetchGoogleBooksResults(query: string): Promise<MediaResult[]> {
             type: 'book' as const,
             imageUrl: book.volumeInfo?.imageLinks?.thumbnail || null,
             year: book.volumeInfo?.publishedDate ? new Date(book.volumeInfo.publishedDate).getFullYear() : null,
+            popularity: book.volumeInfo?.ratingsCount || 0,
         }));
     } catch (error) {
         console.error('Google Books fetch error:', error);
@@ -148,11 +154,12 @@ async function fetchGoogleBooksResults(query: string): Promise<MediaResult[]> {
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query');
+    const sort = searchParams.get('sort'); // 'relevance' | 'popularity'
 
     if (!query?.trim()) return NextResponse.json({ error: 'Query required' }, { status: 400 });
     if (query.length > 200) return NextResponse.json({ error: 'Query too long' }, { status: 400 });
 
-    const cacheKey = `search:${query.toLowerCase().trim()}`;
+    const cacheKey = `search:${query.toLowerCase().trim()}:${sort || 'relevance'}`;
 
     // Cache Check
     if (redis) {
@@ -186,12 +193,17 @@ export async function GET(request: NextRequest) {
             return true;
         });
 
-        const results = [
+        let results = [
             ...(tmdbMovies.status === 'fulfilled' ? tmdbMovies.value : []),
             ...filteredTV,
             ...(anilist.status === 'fulfilled' ? anilist.value : []),
             ...(googleBooks.status === 'fulfilled' ? googleBooks.value : [])
         ];
+
+        // Sorting
+        if (sort === 'popularity') {
+            results.sort((a, b) => b.popularity - a.popularity);
+        }
 
         const responseData = {
             query,

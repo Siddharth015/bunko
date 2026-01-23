@@ -1,29 +1,34 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useAuth } from '../../components/AuthProvider';
+import { useState, useMemo, useEffect } from 'react';
+import { useAuth, supabase } from '../../components/AuthProvider';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileTabs from '../../components/profile/ProfileTabs';
 import ProfileMediaGrid, { MediaEntry } from '../../components/profile/ProfileMediaGrid';
+import LogModal from '../../components/LogModal';
 
 interface ProfileClientProps {
     profile: any;
     mediaEntries: MediaEntry[];
-    // isOwnProfile prop is now optional or we can ignore it
 }
 
-export default function ProfileClient({ profile, mediaEntries }: ProfileClientProps) {
+export default function ProfileClient({ profile, mediaEntries: initialEntries }: ProfileClientProps) {
     const { user } = useAuth();
     const isOwnProfile = user?.id === profile.id;
 
+    // Local state for entries to allow updates without full page reload
+    const [entries, setEntries] = useState<MediaEntry[]>(initialEntries);
     const [activeTab, setActiveTab] = useState<'all' | 'movie' | 'tv' | 'anime' | 'book'>('all');
-
-    // View Mode: 'history' (Watched), 'library' (Plan to Watch), 'watching' (Currently Watching)
     const [viewMode, setViewMode] = useState<'history' | 'library' | 'watching'>('history');
+
+    // Edit/Log State
+    const [editingEntry, setEditingEntry] = useState<MediaEntry | null>(null);
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Filter Logic
     const filteredEntries = useMemo(() => {
-        let entries = mediaEntries;
+        let currentEntries = entries;
 
         // 1. Filter by Tab (Type)
         if (activeTab !== 'all') {
@@ -33,33 +38,33 @@ export default function ProfileClient({ profile, mediaEntries }: ProfileClientPr
                 anime: 'ANIME',
                 book: 'BOOK'
             };
-            entries = entries.filter(e => e.media_type === typeMap[activeTab]);
+            currentEntries = currentEntries.filter(e => e.media_type === typeMap[activeTab]);
         }
 
         // 2. Filter by View Mode (Status)
         if (viewMode === 'history') {
-            entries = entries.filter(e => e.status === 'COMPLETED');
+            currentEntries = currentEntries.filter(e => e.status === 'COMPLETED');
             // Sort by watched_on or created_at (most recent first)
-            return entries.sort((a, b) => {
+            return currentEntries.sort((a, b) => {
                 const dateA = a.watched_on ? new Date(a.watched_on).getTime() : new Date(a.created_at || 0).getTime();
                 const dateB = b.watched_on ? new Date(b.watched_on).getTime() : new Date(b.created_at || 0).getTime();
                 return dateB - dateA;
             });
         } else if (viewMode === 'library') {
-            entries = entries.filter(e => e.status === 'PLAN_TO_WATCH');
-            return entries.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+            currentEntries = currentEntries.filter(e => e.status === 'PLAN_TO_WATCH');
+            return currentEntries.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
         } else if (viewMode === 'watching') {
-            entries = entries.filter(e => e.status === 'WATCHING');
-            return entries.sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+            currentEntries = currentEntries.filter(e => e.status === 'WATCHING');
+            return currentEntries.sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
         }
 
-        return entries;
-    }, [activeTab, viewMode, mediaEntries]);
+        return currentEntries;
+    }, [activeTab, viewMode, entries]);
 
     // Stats Logic
-    const totalWatched = mediaEntries.filter(e => e.status === 'COMPLETED').length;
-    const totalWatching = mediaEntries.filter(e => e.status === 'WATCHING').length;
-    const totalLibrary = mediaEntries.filter(e => e.status === 'PLAN_TO_WATCH').length;
+    const totalWatched = entries.filter(e => e.status === 'COMPLETED').length;
+    const totalWatching = entries.filter(e => e.status === 'WATCHING').length;
+    const totalLibrary = entries.filter(e => e.status === 'PLAN_TO_WATCH').length;
 
     const level = Math.floor(totalWatched / 5) + 1;
 
@@ -71,7 +76,86 @@ export default function ProfileClient({ profile, mediaEntries }: ProfileClientPr
             }).catch(console.error);
         } else {
             navigator.clipboard.writeText(window.location.href);
+            // Could add toast here
             alert('Profile link copied to clipboard!');
+        }
+    };
+
+    const handleEdit = (entry: MediaEntry) => {
+        setEditingEntry(entry);
+        setIsLogModalOpen(true);
+    };
+
+    const handleDelete = async (entry: MediaEntry) => {
+        if (!confirm('Are you sure you want to delete this entry?')) return;
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch(`/api/library?mediaId=${entry.media_id}&mediaType=${entry.media_type}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+
+            if (res.ok) {
+                // Remove from local state
+                setEntries(prev => prev.filter(e => !(e.media_id === entry.media_id && e.media_type === entry.media_type)));
+            } else {
+                alert('Failed to delete entry');
+            }
+        } catch (e) {
+            console.error('Delete error', e);
+            alert('An error occurred');
+        }
+    };
+
+    const handleSaveLog = async (rating: number, review: string, watchedOn: string) => {
+        if (!editingEntry) return;
+        setIsSaving(true);
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch('/api/library', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    mediaId: editingEntry.media_id,
+                    mediaType: editingEntry.media_type, // api expects lowercase usually but handles uppercase too? let's send what we have but ensure API handles it
+                    status: 'COMPLETED', // Logging implies completed usually, or we keep existing status? 
+                    // Logic: If editing, we update specific fields. API upsert handles this.
+                    // BUT: api/library defaults status to PLAN_TO_WATCH if not provided. We should probably send existing status or COMPLETED.
+                    // If we are "Logging" (rating/review), it implies Watched.
+                    // Let's assume we keep it as COMPLETED for now if rating is present.
+                    rating,
+                    review,
+                    watchedOn,
+                    title: editingEntry.title,
+                    imageUrl: editingEntry.image_url,
+                    year: editingEntry.year
+                })
+            });
+
+            if (res.ok) {
+                const { entry: newEntry } = await res.json();
+                // Update local state
+                setEntries(prev => prev.map(e =>
+                    (e.media_id === newEntry.media_id && e.media_type === newEntry.media_type) ? newEntry : e
+                ));
+                setIsLogModalOpen(false);
+                setEditingEntry(null);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -150,9 +234,24 @@ export default function ProfileClient({ profile, mediaEntries }: ProfileClientPr
                     <ProfileMediaGrid
                         entries={filteredEntries}
                         viewMode={viewMode}
+                        isOwnProfile={isOwnProfile}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
                     />
                 </div>
             </div>
+
+            {/* Log Modal for Editing */}
+            <LogModal
+                isOpen={isLogModalOpen}
+                onClose={() => { setIsLogModalOpen(false); setEditingEntry(null); }}
+                onSave={handleSaveLog}
+                title={editingEntry?.title || 'Edit Entry'}
+                isSaving={isSaving}
+                initialRating={editingEntry?.rating}
+                initialReview={editingEntry?.review}
+                initialWatchedOn={editingEntry?.watched_on}
+            />
         </div>
     );
 }

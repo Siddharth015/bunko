@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface LogModalProps {
     isOpen: boolean;
@@ -8,13 +8,25 @@ interface LogModalProps {
     onSave: (rating: number, review: string, watchedOn: string) => void;
     title: string;
     isSaving: boolean;
+    initialRating?: number;
+    initialReview?: string;
+    initialWatchedOn?: string;
 }
 
-export default function LogModal({ isOpen, onClose, onSave, title, isSaving }: LogModalProps) {
-    const [rating, setRating] = useState(0);
+export default function LogModal({ isOpen, onClose, onSave, title, isSaving, initialRating = 0, initialReview = '', initialWatchedOn }: LogModalProps) {
+    const [rating, setRating] = useState(initialRating);
     const [hoverRating, setHoverRating] = useState(0);
-    const [review, setReview] = useState('');
-    const [watchedOn, setWatchedOn] = useState(new Date().toISOString().split('T')[0]); // Default today
+    const [review, setReview] = useState(initialReview);
+    const [watchedOn, setWatchedOn] = useState(initialWatchedOn || new Date().toISOString().split('T')[0]);
+
+    // Reset state when modal opens or initial props change
+    useEffect(() => {
+        if (isOpen) {
+            setRating(initialRating);
+            setReview(initialReview);
+            setWatchedOn(initialWatchedOn || new Date().toISOString().split('T')[0]);
+        }
+    }, [isOpen, initialRating, initialReview, initialWatchedOn]);
 
     if (!isOpen) return null;
 
@@ -61,8 +73,8 @@ export default function LogModal({ isOpen, onClose, onSave, title, isSaving }: L
                                 >
                                     <svg
                                         className={`w-5 h-5 ${star <= (hoverRating || rating)
-                                                ? 'text-white'
-                                                : 'text-gray-700'
+                                            ? 'text-white'
+                                            : 'text-gray-700'
                                             }`}
                                         fill="currentColor"
                                         viewBox="0 0 20 20"

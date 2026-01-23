@@ -81,3 +81,58 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request) {
+    try {
+        // 1. Check Authentication
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                global: {
+                    headers: { Authorization: authHeader },
+                },
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Parse Query Params
+        const { searchParams } = new URL(request.url);
+        const mediaId = searchParams.get('mediaId');
+        const mediaType = searchParams.get('mediaType');
+
+        if (!mediaId || !mediaType) {
+            return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+        }
+
+        // 3. Perform Delete
+        const { error } = await supabase
+            .from('media_entries')
+            .delete()
+            .match({
+                user_id: user.id,
+                media_id: mediaId,
+                media_type: mediaType.toUpperCase()
+            });
+
+        if (error) {
+            console.error('Delete error:', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (err: any) {
+        console.error('API Error:', err);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
