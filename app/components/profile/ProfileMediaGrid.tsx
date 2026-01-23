@@ -10,6 +10,7 @@ export interface MediaEntry {
     image_url?: string;
     year?: number;
     created_at?: string;
+    updated_at?: string;
     watched_on?: string;
 }
 
