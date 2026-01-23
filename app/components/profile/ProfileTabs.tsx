@@ -1,21 +1,21 @@
 'use client';
 
-interface TabProps {
+interface ProfileTabsProps {
     activeTab: 'all' | 'movie' | 'tv' | 'anime' | 'book';
-    onChange: (tab: any) => void;
+    onChange: (tab: 'all' | 'movie' | 'tv' | 'anime' | 'book') => void;
 }
 
-export default function ProfileTabs({ activeTab, onChange }: TabProps) {
+export default function ProfileTabs({ activeTab, onChange }: ProfileTabsProps) {
     const tabs = [
-        { id: 'all', label: 'All', icon: null },
-        { id: 'movie', label: 'Movies', icon: '🎬' },
-        { id: 'tv', label: 'TV', icon: '📺' },
-        { id: 'anime', label: 'Anime', icon: '🎌' },
-        { id: 'book', label: 'Books', icon: '📚' },
-    ];
+        { id: 'all', label: 'All Media' },
+        { id: 'movie', label: 'Movies' },
+        { id: 'tv', label: 'TV Series' },
+        { id: 'anime', label: 'Anime' },
+        { id: 'book', label: 'Books' },
+    ] as const;
 
     return (
-        <div className="flex justify-center md:justify-start gap-2 mb-8 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+        <div className="flex flex-wrap gap-2 mb-8 border-b-2 border-white/10 pb-6">
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -23,14 +23,14 @@ export default function ProfileTabs({ activeTab, onChange }: TabProps) {
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
                         className={`
-                            px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap
+                            px-6 py-2 font-mono text-sm font-bold uppercase tracking-wider transition-all
+                            border border-transparent
                             ${isActive
-                                ? 'bg-white text-black shadow-lg shadow-white/20 scale-105'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                                ? 'bg-white text-black border-white shadow-[4px_4px_0px_0px_rgba(147,51,234,1)] translate-x-[-2px] translate-y-[-2px]'
+                                : 'bg-black text-gray-400 border-white/20 hover:border-white hover:text-white'
                             }
                         `}
                     >
-                        {tab.icon && <span className="text-lg">{tab.icon}</span>}
                         {tab.label}
                     </button>
                 );

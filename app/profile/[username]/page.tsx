@@ -85,7 +85,6 @@ export default async function ProfilePage(
             <ProfileClient
                 profile={profile}
                 mediaEntries={entries || []}
-                isOwnProfile={false}
             />
         </>
     );

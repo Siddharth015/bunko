@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import { useAuth, supabase } from '../components/AuthProvider';
+import PixelIcon from '../components/PixelIcon'; // Import PixelIcon
 
 interface LetterboxdRow {
     Name: string;
@@ -121,7 +122,7 @@ export default function LetterboxdImporter() {
 
                     for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
-                        const title = row.Name || row.Title;
+                        const title = row.Name || row.Title; // Fallback for diff CSV formats
                         const year = row.Year;
 
                         if (!title) {
@@ -208,15 +209,18 @@ export default function LetterboxdImporter() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="min-h-screen bg-[#050505] relative overflow-hidden font-mono text-white">
+            {/* Grid Background */}
+            <div className="fixed inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0"></div>
+
+            <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 z-10">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl font-bold text-white mb-4">
-                        Import from Letterboxd
+                    <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter">
+                        Import <span className="text-purple-500">Data</span>
                     </h1>
-                    <p className="text-gray-300 text-lg">
-                        Upload your Letterboxd export CSV to automatically import your watched movies
+                    <p className="text-gray-400 text-sm font-mono uppercase tracking-widest">
+                        Migrate your legacy database from Letterboxd
                     </p>
                 </div>
 
@@ -225,7 +229,7 @@ export default function LetterboxdImporter() {
                     <div
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
-                        className="border-4 border-dashed border-purple-500 rounded-2xl p-12 text-center bg-gray-800/30 hover:bg-gray-800/50 transition-all cursor-pointer"
+                        className="border-2 border-dashed border-white/20 hover:border-purple-500 rounded-none p-12 text-center bg-black hover:bg-white/5 transition-all cursor-pointer group"
                     >
                         <input
                             type="file"
@@ -234,57 +238,49 @@ export default function LetterboxdImporter() {
                             className="hidden"
                             id="file-upload"
                         />
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                            <svg
-                                className="w-20 h-20 mx-auto mb-4 text-purple-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                />
-                            </svg>
-                            <p className="text-white text-xl font-semibold mb-2">
-                                Drop your CSV file here
-                            </p>
-                            <p className="text-gray-400">or click to browse</p>
+                        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-6">
+                            <PixelIcon type="folder" size={64} className="text-gray-500 group-hover:text-purple-500 transition-colors" />
+                            <div>
+                                <p className="text-white text-xl font-bold uppercase mb-2">
+                                    Drop CSV File
+                                </p>
+                                <p className="text-gray-500 text-xs font-mono">
+                                    Must be valid 'watched.csv' export
+                                </p>
+                            </div>
                         </label>
                     </div>
                 ) : (
-                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 mb-8">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-black border border-white/20 p-8 mb-8">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
                             <div>
-                                <p className="text-white text-lg font-semibold">{file.name}</p>
-                                <p className="text-gray-400 text-sm">
-                                    {(file.size / 1024).toFixed(2)} KB
+                                <p className="text-white font-bold font-mono text-lg">{file.name}</p>
+                                <p className="text-gray-500 text-xs font-mono uppercase">
+                                    {(file.size / 1024).toFixed(2)} KB • READY_TO_PROCESS
                                 </p>
                             </div>
                             {!importing && !summary && (
                                 <button
                                     onClick={() => setFile(null)}
-                                    className="text-red-400 hover:text-red-300 transition-colors"
+                                    className="text-red-500 hover:text-red-400 font-mono text-xs uppercase underline"
                                 >
-                                    Remove
+                                    Cancel
                                 </button>
                             )}
                         </div>
 
                         {/* Progress Bar */}
                         {importing && (
-                            <div className="mb-6">
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-white text-sm">Processing...</span>
-                                    <span className="text-purple-400 text-sm font-semibold">
+                            <div className="mb-8">
+                                <div className="flex justify-between mb-2 font-mono text-xs uppercase">
+                                    <span className="text-white animate-pulse">Processing_Data...</span>
+                                    <span className="text-purple-500 font-bold">
                                         {progress}%
                                     </span>
                                 </div>
-                                <div className="w-full bg-gray-700 rounded-full h-3">
+                                <div className="w-full bg-gray-900 h-4 border border-white/20 p-0.5">
                                     <div
-                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
+                                        className="bg-purple-600 h-full transition-all duration-300"
                                         style={{ width: `${progress}%` }}
                                     />
                                 </div>
@@ -296,26 +292,26 @@ export default function LetterboxdImporter() {
                             <button
                                 onClick={processImport}
                                 disabled={!user}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-white text-black font-black font-mono uppercase py-4 hover:bg-purple-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-2 border-transparent hover:border-white"
                             >
-                                {user ? 'Start Import' : 'Please Sign In to Import'}
+                                {user ? 'Initialize Import Sequence' : 'Login Required'}
                             </button>
                         )}
 
                         {/* Summary */}
                         {summary && (
-                            <div className="bg-gray-900/50 rounded-lg p-6 mb-6">
-                                <h3 className="text-white text-xl font-semibold mb-4">
-                                    Import Complete!
+                            <div className="bg-white/5 border border-white/10 p-6 mb-6">
+                                <h3 className="text-white font-bold font-mono uppercase mb-4 text-center">
+                                    Operation Complete
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-green-500/20 border border-green-500 rounded-lg p-4">
-                                        <p className="text-green-300 text-sm mb-1">Successfully Saved</p>
-                                        <p className="text-white text-3xl font-bold">{summary.imported}</p>
+                                    <div className="bg-green-500/10 border border-green-500/50 p-4 text-center">
+                                        <div className="text-3xl font-black text-white">{summary.imported}</div>
+                                        <div className="text-green-500 text-xs font-mono uppercase">Success</div>
                                     </div>
-                                    <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
-                                        <p className="text-red-300 text-sm mb-1">Failed/Not Found</p>
-                                        <p className="text-white text-3xl font-bold">{summary.failed}</p>
+                                    <div className="bg-red-500/10 border border-red-500/50 p-4 text-center">
+                                        <div className="text-3xl font-black text-white">{summary.failed}</div>
+                                        <div className="text-red-500 text-xs font-mono uppercase">Errors</div>
                                     </div>
                                 </div>
                             </div>
@@ -323,62 +319,35 @@ export default function LetterboxdImporter() {
 
                         {/* Results Table */}
                         {results.length > 0 && (
-                            <div className="mt-6">
-                                <h3 className="text-white text-xl font-semibold mb-4">
-                                    Import Results ({results.length} entries)
+                            <div className="mt-8 border-t border-white/10 pt-6">
+                                <h3 className="text-gray-500 font-mono text-xs uppercase mb-4">
+                                    Log Output_
                                 </h3>
-                                <div className="max-h-96 overflow-y-auto bg-gray-900/50 rounded-lg">
-                                    <table className="w-full">
-                                        <thead className="sticky top-0 bg-gray-800">
-                                            <tr className="text-left">
-                                                <th className="p-3 text-gray-300 font-semibold">Original</th>
-                                                <th className="p-3 text-gray-300 font-semibold">Matched</th>
-                                                <th className="p-3 text-gray-300 font-semibold">Status</th>
+                                <div className="max-h-96 overflow-y-auto bg-black border border-white/10 font-mono text-xs">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-white/5 border-b border-white/10 text-gray-400">
+                                            <tr>
+                                                <th className="p-3 uppercase">Original</th>
+                                                <th className="p-3 uppercase">Match</th>
+                                                <th className="p-3 uppercase">Status</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody className="divide-y divide-white/5">
                                             {results.map((result, index) => (
-                                                <tr
-                                                    key={index}
-                                                    className="border-t border-gray-700 hover:bg-gray-800/50"
-                                                >
-                                                    <td className="p-3">
-                                                        <p className="text-white font-medium">
-                                                            {result.originalTitle}
-                                                        </p>
-                                                        {result.originalYear && (
-                                                            <p className="text-gray-400 text-sm">
-                                                                {result.originalYear}
-                                                            </p>
-                                                        )}
+                                                <tr key={index} className="hover:bg-white/5">
+                                                    <td className="p-3 text-gray-300">
+                                                        {result.originalTitle} ({result.originalYear || '?'})
                                                     </td>
-                                                    <td className="p-3">
-                                                        {result.matched ? (
-                                                            <>
-                                                                <p className="text-white font-medium">
-                                                                    {result.matchedTitle}
-                                                                </p>
-                                                                <p className="text-gray-400 text-sm">
-                                                                    {result.matchedYear}
-                                                                </p>
-                                                            </>
-                                                        ) : (
-                                                            <p className="text-gray-500 italic">Not found</p>
-                                                        )}
+                                                    <td className="p-3 text-gray-400">
+                                                        {result.matched ? result.matchedTitle : '-'}
                                                     </td>
                                                     <td className="p-3">
                                                         {result.saved ? (
-                                                            <span className="inline-block bg-green-500/20 text-green-300 text-xs font-semibold px-3 py-1 rounded-full">
-                                                                ✓ Saved
-                                                            </span>
+                                                            <span className="text-green-500">SAVED</span>
                                                         ) : result.matched ? (
-                                                            <span className="inline-block bg-yellow-500/20 text-yellow-300 text-xs font-semibold px-3 py-1 rounded-full">
-                                                                ⚠ Save Error
-                                                            </span>
+                                                            <span className="text-yellow-500">ERR_SAVE</span>
                                                         ) : (
-                                                            <span className="inline-block bg-red-500/20 text-red-300 text-xs font-semibold px-3 py-1 rounded-full">
-                                                                ✗ Not Found
-                                                            </span>
+                                                            <span className="text-red-500">NOT_FOUND</span>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -390,23 +359,6 @@ export default function LetterboxdImporter() {
                         )}
                     </div>
                 )}
-
-                {/* Instructions */}
-                <div className="mt-12 bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8">
-                    <h3 className="text-white text-2xl font-semibold mb-4">
-                        How to export from Letterboxd:
-                    </h3>
-                    <ol className="text-gray-300 space-y-2 list-decimal list-inside">
-                        <li>Go to your Letterboxd profile settings</li>
-                        <li>Click on "Import & Export"</li>
-                        <li>Click "Export Your Data"</li>
-                        <li>Download the ZIP file and extract it</li>
-                        <li>Upload the "watched.csv" file here</li>
-                    </ol>
-                    <p className="text-purple-400 text-sm mt-4">
-                        Note: The import process may take a few minutes for large libraries due to rate limiting.
-                    </p>
-                </div>
             </div>
         </div>
     );

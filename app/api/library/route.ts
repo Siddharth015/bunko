@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
         // 2. Parse Request Body
         const body = await request.json();
-        const { mediaId, mediaType, title, imageUrl, year, status, rating, review } = body;
+        const { mediaId, mediaType, title, imageUrl, year, status, rating, review, watchedOn } = body;
 
         if (!mediaId || !mediaType) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -50,7 +50,8 @@ export async function POST(request: Request) {
             // New Columns (Saved for faster profile loading)
             title: title || null,
             image_url: imageUrl || null,
-            year: year || null
+            year: year || null,
+            watched_on: watchedOn || null,
         };
 
         // Only add optional fields if they exist to avoid overwriting with null

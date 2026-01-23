@@ -4,6 +4,7 @@ import { useState, useEffect, useDeferredValue } from 'react';
 import { useAuth, supabase } from '../components/AuthProvider';
 import AuthModal from '../components/AuthModal';
 import LogModal from '../components/LogModal';
+import PixelIcon from '../components/PixelIcon';
 
 interface MediaResult {
     id: string;
@@ -14,85 +15,56 @@ interface MediaResult {
 }
 
 function MediaCard({ media, onLibraryAdd, onLogClick, isAdding }: { media: MediaResult; onLibraryAdd: () => void; onLogClick: () => void; isAdding: boolean }) {
-    const badgeColors = {
-        movie: 'from-blue-500 to-cyan-500',
-        tv: 'from-orange-500 to-amber-500',
-        anime: 'from-pink-500 to-rose-500',
-        book: 'from-green-500 to-emerald-500',
-    };
 
+    // Pixel/Journal Card Style - UPDATED: Color by default, glow on hover
     return (
-        <div className="group relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
-            <div className="relative bg-black/40 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300">
-                {/* Image */}
-                <div className="relative w-full aspect-[2/3] bg-gray-900">
-                    {media.imageUrl ? (
-                        <img
-                            src={media.imageUrl}
-                            alt={media.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-700">
-                            <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                    )}
-
-                    {/* Badge */}
-                    <div className={`absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r ${badgeColors[media.type] || badgeColors.movie} text-white text-xs font-bold uppercase shadow-lg`}>
-                        {media.type}
+        <div className="group relative bg-black border border-white/20 hover:border-purple-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all duration-300">
+            {/* Image Area */}
+            <div className="relative w-full aspect-[2/3] bg-gray-900 border-b border-white/10 group-hover:border-white/30 overflow-hidden">
+                {media.imageUrl ? (
+                    <img
+                        src={media.imageUrl}
+                        alt={media.title}
+                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-700 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:8px_8px]">
+                        <PixelIcon type="disk" size={32} className="opacity-20 mb-2" />
+                        <span className="text-xs font-mono uppercase">No Image</span>
                     </div>
+                )}
 
-                    {/* Action Buttons Overlay */}
-                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-sm p-4">
-
-                        {/* 1. Log / Watched Button */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onLogClick();
-                            }}
-                            className="w-full bg-white text-black font-bold py-3 px-4 rounded-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 hover:bg-gray-200 shadow-lg shadow-white/10"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Watched
-                        </button>
-
-                        {/* 2. Library / Plan to Watch Button */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onLibraryAdd();
-                            }}
-                            disabled={isAdding}
-                            className="w-full bg-white/10 text-white font-semibold py-3 px-4 rounded-xl border border-white/20 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75 flex items-center justify-center gap-2 hover:bg-white/20"
-                        >
-                            {isAdding ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
-                            )}
-                            {isAdding ? 'Adding...' : 'Library'}
-                        </button>
-
-                    </div>
+                {/* Type Badge - Top Right */}
+                <div className="absolute top-0 right-0 bg-white text-black text-[10px] font-bold font-mono px-2 py-1 uppercase z-10">
+                    {media.type}
                 </div>
 
-                {/* Info */}
-                <div className="p-4">
-                    <h3 className="text-white font-semibold text-sm mb-1 line-clamp-2 group-hover:text-purple-300 transition-colors">
-                        {media.title}
-                    </h3>
-                    <p className="text-gray-400 text-xs">
-                        {media.year || 'Year Unknown'}
-                    </p>
+                {/* Hover Overlay Actions */}
+                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4 z-20">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onLogClick(); }}
+                        className="w-full bg-white text-black font-bold font-mono text-xs uppercase py-3 border-2 border-transparent hover:border-black hover:bg-gray-200 transition-all"
+                    >
+                        Log Entry
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onLibraryAdd(); }}
+                        disabled={isAdding}
+                        className="w-full bg-black text-white font-bold font-mono text-xs uppercase py-3 border border-white hover:bg-white hover:text-black transition-all"
+                    >
+                        {isAdding ? 'Processing...' : '+ Add to List'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Info Area */}
+            <div className="p-4 bg-black">
+                <h3 className="text-white font-bold font-mono text-sm uppercase truncate mb-1">
+                    {media.title}
+                </h3>
+                <div className="flex justify-between items-center text-xs text-gray-500 font-mono">
+                    <span>{media.year || 'UNKNOWN'}</span>
+                    <span className="tracking-widest">#{media.id.slice(0, 4)}</span>
                 </div>
             </div>
         </div>
@@ -103,10 +75,10 @@ function SearchSkeleton() {
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="animate-pulse">
-                    <div className="aspect-[2/3] bg-white/5 rounded-2xl mb-4"></div>
-                    <div className="h-4 bg-white/5 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                <div key={i} className="bg-black border border-white/10 p-4 animate-pulse">
+                    <div className="w-full aspect-[2/3] bg-gray-900 mb-4 opacity-50"></div>
+                    <div className="h-4 bg-gray-800 w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-900 w-1/4"></div>
                 </div>
             ))}
         </div>
@@ -119,6 +91,7 @@ export default function SearchClient() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [breakdown, setBreakdown] = useState({ movies: 0, anime: 0, books: 0, tv: 0 });
+    const [activeFilter, setActiveFilter] = useState<'all' | 'movie' | 'tv' | 'anime' | 'book'>('all');
 
     const deferredSearch = useDeferredValue(searchInput);
 
@@ -133,6 +106,7 @@ export default function SearchClient() {
         const performSearch = async () => {
             setLoading(true);
             setError(null);
+            setActiveFilter('all');
 
             try {
                 const response = await fetch(`/api/search?query=${encodeURIComponent(deferredSearch)}`);
@@ -161,7 +135,7 @@ export default function SearchClient() {
     const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
 
     // Helper to call API
-    const saveMediaEntry = async (media: MediaResult, extraData: any) => {
+    const saveMediaEntry = async (mediaInfo: any, extraData: any) => {
         const session = (await supabase.auth.getSession()).data.session;
         if (!session) throw new Error('No session');
 
@@ -172,11 +146,11 @@ export default function SearchClient() {
                 'Authorization': `Bearer ${session.access_token}`
             },
             body: JSON.stringify({
-                mediaId: media.id,
-                mediaType: media.type,
-                title: media.title,
-                year: media.year,
-                imageUrl: media.imageUrl,
+                mediaId: mediaInfo.mediaId,
+                mediaType: mediaInfo.mediaType,
+                title: mediaInfo.title,
+                year: mediaInfo.year,
+                imageUrl: mediaInfo.imageUrl,
                 ...extraData
             })
         });
@@ -194,8 +168,16 @@ export default function SearchClient() {
         setAddingIds(prev => new Set(prev).add(media.id));
 
         try {
-            await saveMediaEntry(media, { status: 'PLAN_TO_WATCH' });
-            // Ideally assume success or show toast
+            const { id, title, type, year, imageUrl } = media;
+
+            await saveMediaEntry({
+                mediaId: id,
+                mediaType: type,
+                title,
+                year,
+                imageUrl
+            }, { status: 'PLAN_TO_WATCH' });
+
         } catch (err) {
             console.error(err);
             alert('Failed to add to library');
@@ -216,14 +198,27 @@ export default function SearchClient() {
     };
 
     // 3. Handle Saving from Log Modal
-    const handleLogSave = async (data: { status: 'WATCHED' | 'PLAN_TO_WATCH'; rating?: number; review?: string }) => {
+    const handleLogSave = async (rating: number, review: string, watchedOn: string) => {
         if (!selectedMedia) return;
         setIsSavingLog(true);
         try {
-            await saveMediaEntry(selectedMedia, data);
+            const { id, title, type, imageUrl, year } = selectedMedia;
+
+            await saveMediaEntry({
+                mediaId: id,
+                mediaType: type,
+                title,
+                imageUrl,
+                year,
+            }, {
+                status: 'WATCHED',
+                rating,
+                review,
+                watchedOn
+            });
+
             setShowLogModal(false);
             setSelectedMedia(null);
-            // Ideally trigger a toast here
         } catch (err: any) {
             console.error(err);
             alert(`Failed to log entry: ${err.message || 'Unknown error'}`);
@@ -232,85 +227,153 @@ export default function SearchClient() {
         }
     };
 
+    // Request Listing Logic
+    const [requestSent, setRequestSent] = useState(false);
+    const handleRequestListing = async () => {
+        if (!user) { setShowAuthModal(true); return; }
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch('/api/request-listing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ title: searchInput, type: activeFilter === 'all' ? 'UNKNOWN' : activeFilter })
+            });
+            if (res.ok) {
+                setRequestSent(true);
+                setTimeout(() => setRequestSent(false), 3000);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Filter Logic
+    const filteredResults = activeFilter === 'all'
+        ? results
+        : results.filter(r => r.type === activeFilter);
+
+    // Interactive Empty State Categories
+    const emptyCategories = [
+        { label: 'TOP_MOVIES', icon: 'disk', query: 'Top Rated Movies' },
+        { label: 'ANIME_HITS', icon: 'star', query: 'Popular Anime' },
+        { label: 'SCI_FI_BOOKS', icon: 'lightning', query: 'Sci-Fi Books' },
+        { label: 'DISCOVER', icon: 'search', query: '2024 Hidden Gems' },
+    ] as const;
+
     return (
-        <div className="min-h-screen bg-black relative overflow-hidden pt-20">
+        <div className="min-h-screen bg-[#050505] relative overflow-hidden pt-20 font-mono">
+            {/* Grid Background */}
+            <div className="fixed inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0"></div>
+
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
             <LogModal
                 isOpen={showLogModal}
                 onClose={() => setShowLogModal(false)}
                 onSave={handleLogSave}
-                mediaTitle={selectedMedia?.title || ''}
+                title={selectedMedia?.title || ''}
                 isSaving={isSavingLog}
             />
 
-            {/* Background */}
-            <div className="fixed inset-0 opacity-40 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-black to-pink-900"></div>
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px]"></div>
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-[128px]"></div>
-            </div>
-
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 z-10">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-7xl font-black text-white mb-4">
-                        Universal Search
+                    <div className="inline-block border border-white/20 px-3 py-1 mb-4">
+                        <span className="text-xs text-purple-500 font-bold uppercase tracking-widest animate-pulse">
+                            System_Online
+                        </span>
+                    </div>
+                    <h1 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">
+                        Media_Discovery<span className="text-purple-500">_Uplink</span>
                     </h1>
-                    <p className="text-xl text-gray-400">
-                        Movies, Series, Anime, and Books—all in one place
-                    </p>
                 </div>
 
-                {/* Search Bar */}
-                <div className="max-w-3xl mx-auto mb-12">
-                    <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-focus-within:opacity-75 transition duration-500"></div>
-                        <div className="relative flex items-center">
-                            <svg className="absolute left-6 w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                {/* Search Bar - Terminal Style */}
+                <div className="max-w-3xl mx-auto mb-16">
+                    <div className="group relative">
+                        <div className="absolute -inset-1 bg-white/10 blur opacity-25 group-focus-within:opacity-75 transition duration-500"></div>
+                        <div className="relative flex items-center bg-black border-2 border-white/20 group-focus-within:border-white transition-colors">
+                            <div className="px-4 text-gray-500 group-focus-within:text-white transition-colors">
+                                <PixelIcon type="search" size={24} />
+                            </div>
                             <input
                                 type="text"
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search here... (e.g. Breaking Bad)"
-                                className="w-full pl-16 pr-6 py-5 bg-white/5 backdrop-blur-xl text-white rounded-2xl border border-white/10 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg placeholder-gray-500"
+                                placeholder="ENTER_KEYWORDS..."
+                                className="w-full py-4 bg-transparent text-white font-mono uppercase text-lg placeholder-gray-700 focus:outline-none"
+                                spellCheck={false}
                             />
+                            {loading && (
+                                <div className="px-4">
+                                    <div className="w-4 h-4 bg-purple-500 animate-spin"></div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
+                {/* Stats Chips (Clickable Filters) */}
                 {results.length > 0 && !loading && (
-                    <div className="flex gap-3 justify-center mb-12 flex-wrap">
-                        <div className="px-6 py-3 bg-blue-500/10 border border-blue-500/30 rounded-full backdrop-blur-sm">
-                            <span className="text-blue-300 font-semibold">{breakdown.movies} Movies</span>
-                        </div>
-                        <div className="px-6 py-3 bg-orange-500/10 border border-orange-500/30 rounded-full backdrop-blur-sm">
-                            <span className="text-orange-300 font-semibold">{breakdown.tv} TV Shows</span>
-                        </div>
-                        <div className="px-6 py-3 bg-pink-500/10 border border-pink-500/30 rounded-full backdrop-blur-sm">
-                            <span className="text-pink-300 font-semibold">{breakdown.anime} Anime</span>
-                        </div>
-                        <div className="px-6 py-3 bg-green-500/10 border border-green-500/30 rounded-full backdrop-blur-sm">
-                            <span className="text-green-300 font-semibold">{breakdown.books} Books</span>
-                        </div>
+                    <div className="flex gap-4 justify-center mb-12 flex-wrap">
+                        <button
+                            onClick={() => setActiveFilter('all')}
+                            className={`flex items-center gap-2 px-4 py-2 border transition-all ${activeFilter === 'all' ? 'border-purple-500 bg-purple-500/20' : 'border-white/10 hover:border-white/50'}`}
+                        >
+                            <span className="text-white font-bold text-xs uppercase">All Results ({results.length})</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveFilter('movie')}
+                            className={`flex items-center gap-2 px-4 py-2 border transition-all ${activeFilter === 'movie' ? 'border-blue-500 bg-blue-500/20' : 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10'}`}
+                        >
+                            <PixelIcon type="disk" size={16} className="text-blue-500" />
+                            <span className="text-blue-400 font-bold text-xs uppercase">{breakdown.movies} Movies</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveFilter('tv')}
+                            className={`flex items-center gap-2 px-4 py-2 border transition-all ${activeFilter === 'tv' ? 'border-orange-500 bg-orange-500/20' : 'border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10'}`}
+                        >
+                            <PixelIcon type="folder" size={16} className="text-orange-500" />
+                            <span className="text-orange-400 font-bold text-xs uppercase">{breakdown.tv} TV Series</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveFilter('anime')}
+                            className={`flex items-center gap-2 px-4 py-2 border transition-all ${activeFilter === 'anime' ? 'border-pink-500 bg-pink-500/20' : 'border-pink-500/30 bg-pink-500/5 hover:bg-pink-500/10'}`}
+                        >
+                            <PixelIcon type="star" size={16} className="text-pink-500" />
+                            <span className="text-pink-400 font-bold text-xs uppercase">{breakdown.anime} Anime</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveFilter('book')}
+                            className={`flex items-center gap-2 px-4 py-2 border transition-all ${activeFilter === 'book' ? 'border-green-500 bg-green-500/20' : 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'}`}
+                        >
+                            <PixelIcon type="lightning" size={16} className="text-green-500" />
+                            <span className="text-green-400 font-bold text-xs uppercase">{breakdown.books} Books</span>
+                        </button>
                     </div>
                 )}
 
-                {/* Results */}
+                {/* Results Grid - Filtered */}
                 {loading && <SearchSkeleton />}
 
                 {error && (
-                    <div className="text-center bg-red-500/10 border border-red-500/30 rounded-2xl p-6 backdrop-blur-sm">
-                        <p className="text-red-400">{error}</p>
+                    <div className="text-center border border-red-500/50 bg-red-500/10 p-6">
+                        <p className="text-red-500 font-mono font-bold uppercase">Error: {error}</p>
                     </div>
                 )}
 
-                {!loading && results.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        {results.map((media) => (
+                {!loading && filteredResults.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-in fade-in duration-500">
+                        {filteredResults.map((media) => (
                             <MediaCard
                                 key={media.id}
                                 media={media}
@@ -322,10 +385,56 @@ export default function SearchClient() {
                     </div>
                 )}
 
-                {/* Empty State */}
-                {!loading && !error && searchInput && results.length === 0 && deferredSearch.length >= 2 && (
-                    <div className="text-center py-20">
-                        <p className="text-gray-400 text-lg">No results found for "{deferredSearch}"</p>
+                {!loading && results.length > 0 && filteredResults.length === 0 && (
+                    <div className="text-center py-20 text-gray-500 font-mono">
+                        No results in this category.
+                    </div>
+                )}
+
+                {/* No Results found on Search */}
+                {!loading && !error && searchInput.length >= 2 && results.length === 0 && (
+                    <div className="text-center py-20 border border-white/10 bg-white/5">
+                        <p className="text-gray-400 font-mono mb-6 uppercase">
+                            No data found for "{searchInput}"
+                        </p>
+                        <button
+                            onClick={handleRequestListing}
+                            disabled={requestSent}
+                            className={`px-8 py-3 font-bold font-mono uppercase tracking-wider transition-all
+                                ${requestSent
+                                    ? 'bg-green-500 text-black border-green-500'
+                                    : 'bg-transparent text-white border-2 border-white hover:bg-white hover:text-black'
+                                }
+                            `}
+                        >
+                            {requestSent ? 'Request Sent ✓' : 'Request Listing +'}
+                        </button>
+                        <p className="text-gray-600 text-xs mt-4 font-mono">
+                            Our archivists will review your request manually.
+                        </p>
+                    </div>
+                )}
+
+                {/* Empty State / Quick Browse (Visual Only) */}
+                {!loading && !error && searchInput.length < 2 && (
+                    <div className="text-center py-12">
+                        {/* Removed Text Label */}
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                            {emptyCategories.map((cat, i) => (
+                                <div
+                                    key={i}
+                                    className="group flex flex-col items-center justify-center p-8 border border-white/10 bg-white/5 cursor-default transition-all duration-300"
+                                >
+                                    <div className="mb-4 text-gray-500 group-hover:text-purple-500 transition-colors">
+                                        <PixelIcon type={cat.icon as any} size={48} animated={false} />
+                                    </div>
+                                    <span className="text-white font-bold font-mono text-sm uppercase tracking-wider group-hover:text-purple-400">
+                                        {cat.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useAuth } from '../../components/AuthProvider';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileTabs from '../../components/profile/ProfileTabs';
 import ProfileMediaGrid, { MediaEntry } from '../../components/profile/ProfileMediaGrid';
@@ -8,12 +9,17 @@ import ProfileMediaGrid, { MediaEntry } from '../../components/profile/ProfileMe
 interface ProfileClientProps {
     profile: any;
     mediaEntries: MediaEntry[];
-    isOwnProfile: boolean;
+    // isOwnProfile prop is now optional or we can ignore it
 }
 
-export default function ProfileClient({ profile, mediaEntries, isOwnProfile }: ProfileClientProps) {
+export default function ProfileClient({ profile, mediaEntries }: ProfileClientProps) {
+    const { user } = useAuth();
+    const isOwnProfile = user?.id === profile.id;
+
     const [activeTab, setActiveTab] = useState<'all' | 'movie' | 'tv' | 'anime' | 'book'>('all');
-    const [viewMode, setViewMode] = useState<'history' | 'library'>('history');
+
+    // View Mode: 'history' (Watched), 'library' (Plan to Watch), 'watching' (Currently Watching)
+    const [viewMode, setViewMode] = useState<'history' | 'library' | 'watching'>('history');
 
     // Filter Logic
     const filteredEntries = useMemo(() => {
@@ -31,29 +37,50 @@ export default function ProfileClient({ profile, mediaEntries, isOwnProfile }: P
         }
 
         // 2. Filter by View Mode (Status)
-        // History = COMPLETED, Library = PLAN_TO_WATCH
-        const statusTarget = viewMode === 'history' ? 'COMPLETED' : 'PLAN_TO_WATCH';
-        entries = entries.filter(e => e.status === statusTarget);
+        if (viewMode === 'history') {
+            entries = entries.filter(e => e.status === 'COMPLETED');
+            // Sort by watched_on or created_at (most recent first)
+            return entries.sort((a, b) => {
+                const dateA = a.watched_on ? new Date(a.watched_on).getTime() : new Date(a.created_at || 0).getTime();
+                const dateB = b.watched_on ? new Date(b.watched_on).getTime() : new Date(b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+        } else if (viewMode === 'library') {
+            entries = entries.filter(e => e.status === 'PLAN_TO_WATCH');
+            return entries.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        } else if (viewMode === 'watching') {
+            entries = entries.filter(e => e.status === 'WATCHING');
+            return entries.sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+        }
 
-        // 3. Sort
-        // History -> Recently updated first
-        // Library -> Generally recent adds first
-        return entries.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        return entries;
     }, [activeTab, viewMode, mediaEntries]);
 
     // Stats Logic
     const totalWatched = mediaEntries.filter(e => e.status === 'COMPLETED').length;
-    const level = Math.floor(totalWatched / 5) + 1; // Simple level calc: 1 level per 5 items
+    const totalWatching = mediaEntries.filter(e => e.status === 'WATCHING').length;
+    const totalLibrary = mediaEntries.filter(e => e.status === 'PLAN_TO_WATCH').length;
+
+    const level = Math.floor(totalWatched / 5) + 1;
+
+    const handleShare = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: `${profile.username}'s Bunko Profile`,
+                url: window.location.href
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Profile link copied to clipboard!');
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-black relative overflow-hidden pt-20">
-            {/* Background */}
-            <div className="fixed inset-0 opacity-40 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-black to-pink-900"></div>
-                <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px]"></div>
-            </div>
+        <div className="min-h-screen bg-[#050505] relative overflow-hidden pt-20 font-mono">
+            {/* Grid Background */}
+            <div className="fixed inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0"></div>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 z-10">
 
                 {/* Header */}
                 <ProfileHeader
@@ -62,34 +89,67 @@ export default function ProfileClient({ profile, mediaEntries, isOwnProfile }: P
                     avatarUrl={profile.avatar_url}
                     level={level}
                     totalWatched={totalWatched}
+                    isOwnProfile={isOwnProfile}
                 />
 
-                {/* Sub-Navigation (Switch View Mode) */}
-                <div className="flex items-center gap-6 mb-8 border-b border-white/10 pb-4">
+                {/* Main Navigation (View Modes) */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/20 pb-6">
+                    <div className="flex items-center gap-1 bg-black p-1 border border-white/20 rounded-sm">
+                        {[
+                            { id: 'history', label: 'History', count: totalWatched },
+                            { id: 'watching', label: 'Watching', count: totalWatching },
+                            { id: 'library', label: 'Library', count: totalLibrary },
+                        ].map((mode) => (
+                            <button
+                                key={mode.id}
+                                onClick={() => setViewMode(mode.id as any)}
+                                className={`
+                                    px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all
+                                    ${viewMode === mode.id
+                                        ? 'bg-white text-black shadow-sm'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }
+                                `}
+                            >
+                                {mode.label}
+                                <span className={`ml-2 text-xs ${viewMode === mode.id ? 'text-gray-500' : 'text-gray-600'}`}>
+                                    [{mode.count}]
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
                     <button
-                        onClick={() => setViewMode('history')}
-                        className={`text-xl font-bold transition-colors ${viewMode === 'history' ? 'text-white' : 'text-gray-500 hover:text-white'}`}
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition-all uppercase font-bold text-sm tracking-wider"
                     >
-                        History
-                    </button>
-                    <button
-                        onClick={() => setViewMode('library')}
-                        className={`text-xl font-bold transition-colors ${viewMode === 'library' ? 'text-white' : 'text-gray-500 hover:text-white'}`}
-                    >
-                        Library <span className="text-xs align-top bg-white/10 px-1.5 py-0.5 rounded text-gray-400 ml-1">
-                            {mediaEntries.filter(e => e.status === 'PLAN_TO_WATCH').length}
-                        </span>
+                        Share Profile
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
                     </button>
                 </div>
 
-                {/* Category Tabs */}
+                {/* Sub-Filters (Tabs) */}
                 <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
+
+                {/* Content Label */}
+                <div className="mb-6 flex items-center justify-between">
+                    <h3 className="text-white font-black text-xl uppercase tracking-tighter">
+                        {viewMode === 'history' && 'Log_Entries'}
+                        {viewMode === 'watching' && 'Active_Sessions'}
+                        {viewMode === 'library' && 'Backlog_Grid'}
+                    </h3>
+                    <div className="text-gray-500 text-xs font-mono">
+                        Showing {filteredEntries.length} items
+                    </div>
+                </div>
 
                 {/* Content Grid */}
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <ProfileMediaGrid
                         entries={filteredEntries}
-                        showRating={viewMode === 'history'}
+                        viewMode={viewMode}
                     />
                 </div>
             </div>

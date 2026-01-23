@@ -171,9 +171,24 @@ export async function GET(request: NextRequest) {
             fetchGoogleBooksResults(query)
         ]);
 
+        const animeTitles = new Set(
+            (anilist.status === 'fulfilled' ? anilist.value : []).map(a => a.title.toLowerCase())
+        );
+
+        // Deduplication: Filter out TV shows that are already in Anime list
+        const tvResults = tmdbTV.status === 'fulfilled' ? tmdbTV.value : [];
+        const filteredTV = tvResults.filter(show => {
+            // Check if this show title exists in anime list
+            // Simple check: Exact match or "Title (Anime)"
+            const showTitle = show.title.toLowerCase();
+            if (animeTitles.has(showTitle)) return false;
+            // Additional check for common overlaps like "One Piece"
+            return true;
+        });
+
         const results = [
             ...(tmdbMovies.status === 'fulfilled' ? tmdbMovies.value : []),
-            ...(tmdbTV.status === 'fulfilled' ? tmdbTV.value : []),
+            ...filteredTV,
             ...(anilist.status === 'fulfilled' ? anilist.value : []),
             ...(googleBooks.status === 'fulfilled' ? googleBooks.value : [])
         ];
@@ -184,7 +199,7 @@ export async function GET(request: NextRequest) {
             results,
             breakdown: {
                 movies: tmdbMovies.status === 'fulfilled' ? tmdbMovies.value.length : 0,
-                tv: tmdbTV.status === 'fulfilled' ? tmdbTV.value.length : 0,
+                tv: filteredTV.length, // Updated count
                 anime: anilist.status === 'fulfilled' ? anilist.value.length : 0,
                 books: googleBooks.status === 'fulfilled' ? googleBooks.value.length : 0,
             }
