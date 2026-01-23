@@ -48,6 +48,12 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     return;
                 }
 
+                if (username.length < 3) {
+                    setError('Username must be at least 3 characters long');
+                    setLoading(false);
+                    return;
+                }
+
                 if (!/^[a-zA-Z0-9_]+$/.test(username)) {
                     setError('Username can only contain letters, numbers, and underscores');
                     setLoading(false);
@@ -66,24 +72,34 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
             }
         } catch (err: any) {
             console.error('Sign up/in error:', err);
-            const msg = err.message || '';
+            // Debugging: Log the exact message structure
+            console.log('DEBUG AUTH ERROR MSG:', err.message, typeof err.message);
+
+            const msg = (err.message || '').toLowerCase();
 
             // Map specific errors to user-friendly messages
-            if (msg.includes('violates row-level security')) {
+            if (msg.includes('row-level security') || msg.includes('security policy')) {
                 setError('Unable to create account. Please try again later.');
-            } else if (msg.includes('Password should be at least 6 characters')) {
+            } else if (msg.includes('password') && msg.includes('be at least 6 characters')) {
                 setError('Password must be at least 6 characters long.');
-            } else if (msg.includes('User already registered')) {
+            } else if (msg.includes('already registered') || msg.includes('user already exists')) {
                 setError('User already registered. Please login instead.');
-            } else if (msg.includes('Invalid login credentials')) {
+            } else if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
                 setError('Invalid email or password. Please try again.');
-            } else if (msg.includes('rate limit')) {
+            } else if (msg.includes('rate limit') || msg.includes('too many requests')) {
                 setError('Too many attempts. Please try again later.');
-            } else if (msg.includes('valid email')) {
+            } else if (msg.includes('valid email') || msg.includes('validation failed')) {
                 setError('Please enter a valid email address.');
             } else {
-                // Fallback for unknown errors - keep it vague for security but helpful
-                setError('Authentication failed. Please check your details and try again.');
+                // If we have a message but it didn't match above, we can consider showing it if it doesn't look like code
+                // For now, adhere to "generic fallback" but make it slightly more descriptive if possible, or just stick to safe.
+                // Actually, let's try to show the message if it's short, as it might be a valid specific error we missed
+                if (msg.length < 100 && !msg.includes('database') && !msg.includes('sql') && !msg.includes('error')) {
+                    // Capitalize first letter
+                    setError(err.message);
+                } else {
+                    setError('Authentication failed. Please check your details and try again.');
+                }
             }
         } finally {
             setLoading(false);
