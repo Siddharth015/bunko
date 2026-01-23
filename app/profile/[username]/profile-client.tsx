@@ -175,7 +175,7 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
 
                 {/* Main Navigation (View Modes) */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/20 pb-6">
-                    <div className="flex items-center gap-1 bg-black p-1 border border-white/20 rounded-sm">
+                    <div className="flex items-center gap-1 bg-black p-1 border border-white/20 rounded-sm w-full md:w-auto overflow-x-auto no-scrollbar">
                         {[
                             { id: 'history', label: 'History', count: totalWatched },
                             { id: 'watching', label: 'Watching', count: totalWatching },
@@ -185,7 +185,7 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
                                 key={mode.id}
                                 onClick={() => setViewMode(mode.id as any)}
                                 className={`
-                                    px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all
+                                    flex-1 md:flex-none px-3 md:px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap
                                     ${viewMode === mode.id
                                         ? 'bg-white text-black shadow-sm'
                                         : 'text-gray-400 hover:text-white hover:text-white hover:bg-white/5'

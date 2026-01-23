@@ -148,7 +148,7 @@ export default function Home() {
                 Built for <span className="text-purple-500">Trackers</span>
               </h2>
               <div className="space-y-4">
-                {['Universal Database', 'Profile Sharing', 'XP & Levelling'].map((item, i) => (
+                {['Personal Time Capsule', 'Profile Sharing', 'XP & Levelling'].map((item, i) => (
                   <div key={i}
                     onClick={() => setActiveFeature(i)}
                     className={`cursor-pointer p-4 border-l-4 transition-all ${activeFeature === i ? 'border-purple-500 bg-white/5' : 'border-gray-700 hover:border-white'}`}
