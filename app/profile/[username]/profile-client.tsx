@@ -112,7 +112,7 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
         }
     };
 
-    const handleSaveLog = async (rating: number, review: string, watchedOn: string) => {
+    const handleSaveLog = async (rating: number, review: string, watchedOn: string, status: string) => {
         if (!editingEntry) return;
         setIsSaving(true);
 
@@ -128,15 +128,11 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
                 },
                 body: JSON.stringify({
                     mediaId: editingEntry.media_id,
-                    mediaType: editingEntry.media_type, // api expects lowercase usually but handles uppercase too? let's send what we have but ensure API handles it
-                    status: 'COMPLETED', // Logging implies completed usually, or we keep existing status? 
-                    // Logic: If editing, we update specific fields. API upsert handles this.
-                    // BUT: api/library defaults status to PLAN_TO_WATCH if not provided. We should probably send existing status or COMPLETED.
-                    // If we are "Logging" (rating/review), it implies Watched.
-                    // Let's assume we keep it as COMPLETED for now if rating is present.
-                    rating,
+                    mediaType: editingEntry.media_type,
+                    status: status, // Use selected status
+                    rating: (status === 'COMPLETED' || status === 'DROPPED') ? rating : null,
                     review,
-                    watchedOn,
+                    watchedOn: (status === 'COMPLETED' || status === 'DROPPED') ? watchedOn : null,
                     title: editingEntry.title,
                     imageUrl: editingEntry.image_url,
                     year: editingEntry.year
@@ -145,7 +141,8 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
 
             if (res.ok) {
                 const { entry: newEntry } = await res.json();
-                // Update local state
+                // Update local state and remove/add to correct lists if status changed
+                // Actually, just updating proper entry in array is sufficient if we filter dynamically.
                 setEntries(prev => prev.map(e =>
                     (e.media_id === newEntry.media_id && e.media_type === newEntry.media_type) ? newEntry : e
                 ));
@@ -191,7 +188,7 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
                                     px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all
                                     ${viewMode === mode.id
                                         ? 'bg-white text-black shadow-sm'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                        : 'text-gray-400 hover:text-white hover:text-white hover:bg-white/5'
                                     }
                                 `}
                             >
@@ -251,6 +248,7 @@ export default function ProfileClient({ profile, mediaEntries: initialEntries }:
                 initialRating={editingEntry?.rating}
                 initialReview={editingEntry?.review}
                 initialWatchedOn={editingEntry?.watched_on}
+                initialStatus={editingEntry?.status}
             />
         </div>
     );

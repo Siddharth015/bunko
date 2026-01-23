@@ -14,7 +14,7 @@ interface MediaResult {
     year: number | null;
 }
 
-function MediaCard({ media, onLibraryAdd, onLogClick, isAdding }: { media: MediaResult; onLibraryAdd: () => void; onLogClick: () => void; isAdding: boolean }) {
+function MediaCard({ media, onLibraryAdd, onLogClick, onStartWatching, isAdding, isWatched, isAdded }: { media: MediaResult; onLibraryAdd: () => void; onLogClick: () => void; onStartWatching: () => void; isAdding: boolean; isWatched: boolean; isAdded: boolean }) {
 
     // Pixel/Journal Card Style - UPDATED: Color by default, glow on hover
     return (
@@ -47,13 +47,50 @@ function MediaCard({ media, onLibraryAdd, onLogClick, isAdding }: { media: Media
                     >
                         Log Entry
                     </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onLibraryAdd(); }}
-                        disabled={isAdding}
-                        className="w-full bg-black text-white font-bold font-mono text-xs uppercase py-3 border border-white hover:bg-white hover:text-black transition-all"
-                    >
-                        {isAdding ? 'Processing...' : '+ Add to List'}
-                    </button>
+                    <div className="flex gap-2 w-full">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onStartWatching(); }}
+                            disabled={isAdding || isWatched}
+                            className={`flex-1 font-bold font-mono text-xs uppercase py-3 border transition-all flex items-center justify-center
+                                ${isWatched
+                                    ? 'bg-green-500 text-black border-green-500'
+                                    : 'bg-black text-white border-white hover:bg-white hover:text-black'
+                                }`}
+                            title={isWatched ? "Watching" : "Start Watching"}
+                        >
+                            {isWatched ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            )}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onLibraryAdd(); }}
+                            disabled={isAdding || isAdded}
+                            className={`flex-1 font-bold font-mono text-xs uppercase py-3 border transition-all flex items-center justify-center gap-2
+                                ${isAdded
+                                    ? 'bg-green-500 text-black border-green-500'
+                                    : 'bg-black text-white border-white hover:bg-white hover:text-black'
+                                }`}
+                            title={isAdded ? "Added to Plan to Watch" : "Plan to Watch"}
+                        >
+                            {isAdded ? (
+                                <>
+                                    <span>ADDED</span>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </>
+                            ) : (
+                                <span>+ LIST</span>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -142,6 +179,8 @@ export default function SearchClient() {
     const [selectedMedia, setSelectedMedia] = useState<MediaResult | null>(null);
     const [isSavingLog, setIsSavingLog] = useState(false);
     const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+    const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
+    const [addedToListIds, setAddedToListIds] = useState<Set<string>>(new Set());
 
     // Helper to call API
     const saveMediaEntry = async (mediaInfo: any, extraData: any) => {
@@ -187,9 +226,42 @@ export default function SearchClient() {
                 imageUrl
             }, { status: 'PLAN_TO_WATCH' });
 
+            setAddedToListIds(prev => new Set(prev).add(media.id));
+
         } catch (err) {
             console.error(err);
             alert('Failed to add to library');
+        } finally {
+            setAddingIds(prev => {
+                const next = new Set(prev);
+                next.delete(media.id);
+                return next;
+            });
+        }
+    };
+
+    // 1.5 Handle "Start Watching" (Quick Add)
+    const handleStartWatching = async (media: MediaResult) => {
+        if (!user) { setShowAuthModal(true); return; }
+
+        setAddingIds(prev => new Set(prev).add(media.id));
+
+        try {
+            const { id, title, type, year, imageUrl } = media;
+
+            await saveMediaEntry({
+                mediaId: id,
+                mediaType: type,
+                title,
+                year,
+                imageUrl
+            }, { status: 'WATCHING' });
+
+            setWatchedIds(prev => new Set(prev).add(media.id));
+
+        } catch (err) {
+            console.error(err);
+            alert('Failed to update status');
         } finally {
             setAddingIds(prev => {
                 const next = new Set(prev);
@@ -207,7 +279,7 @@ export default function SearchClient() {
     };
 
     // 3. Handle Saving from Log Modal
-    const handleLogSave = async (rating: number, review: string, watchedOn: string) => {
+    const handleLogSave = async (rating: number, review: string, watchedOn: string, status: string) => {
         if (!selectedMedia) return;
         setIsSavingLog(true);
         try {
@@ -220,10 +292,10 @@ export default function SearchClient() {
                 imageUrl,
                 year,
             }, {
-                status: 'WATCHED',
-                rating,
+                status,
+                rating: (status === 'COMPLETED' || status === 'DROPPED') ? rating : null,
                 review,
-                watchedOn
+                watchedOn: (status === 'COMPLETED' || status === 'DROPPED') ? watchedOn : null
             });
 
             setShowLogModal(false);
@@ -411,8 +483,11 @@ export default function SearchClient() {
                                 key={media.id}
                                 media={media}
                                 onLibraryAdd={() => handleAddToLibrary(media)}
+                                onStartWatching={() => handleStartWatching(media)}
                                 onLogClick={() => handleLogClick(media)}
                                 isAdding={addingIds.has(media.id)}
+                                isWatched={watchedIds.has(media.id)}
+                                isAdded={addedToListIds.has(media.id)}
                             />
                         ))}
                     </div>
