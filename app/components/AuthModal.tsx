@@ -66,17 +66,24 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
             }
         } catch (err: any) {
             console.error('Sign up/in error:', err);
-            // Don't expose server errors to the user
-            if (tab === 'signup' && err.message?.includes('violates row-level security')) {
-                // This specific error might still happen if the trigger fails or something is wrong on the backend
-                // but we shouldn't show "row-level security" to the user
+            const msg = err.message || '';
+
+            // Map specific errors to user-friendly messages
+            if (msg.includes('violates row-level security')) {
                 setError('Unable to create account. Please try again later.');
-            } else if (err.message) {
-                // For now, we still show the message if it's likely safe (e.g. "User already registered")
-                // But ideally we map codes to messages. For general safety:
-                setError(err.message === 'User already registered' ? err.message : 'Authentication failed. Please check your credentials.');
+            } else if (msg.includes('Password should be at least 6 characters')) {
+                setError('Password must be at least 6 characters long.');
+            } else if (msg.includes('User already registered')) {
+                setError('User already registered. Please login instead.');
+            } else if (msg.includes('Invalid login credentials')) {
+                setError('Invalid email or password. Please try again.');
+            } else if (msg.includes('rate limit')) {
+                setError('Too many attempts. Please try again later.');
+            } else if (msg.includes('valid email')) {
+                setError('Please enter a valid email address.');
             } else {
-                setError('An unexpected error occurred. Please try again.');
+                // Fallback for unknown errors - keep it vague for security but helpful
+                setError('Authentication failed. Please check your details and try again.');
             }
         } finally {
             setLoading(false);
@@ -144,7 +151,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                     <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">
                         {tab === 'signin'
                             ? 'Authenticate to access logs'
-                            : 'Initialize new user protocol'}
+                            : 'Initialize new user'}
                     </p>
                 </div>
 
